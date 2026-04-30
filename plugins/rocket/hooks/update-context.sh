@@ -5,6 +5,12 @@
 
 set -u
 
+# Recursion guard: the `claude -p` subprocess we spawn below also fires Stop
+# hooks and would re-invoke this script. The exported sentinel propagates to
+# the subprocess; subsequent invocations exit immediately.
+[ -n "${ROCKET_CONTEXT_UPDATE_INVOKED:-}" ] && exit 0
+export ROCKET_CONTEXT_UPDATE_INVOKED=1
+
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$PWD}"
 CLAUDE_DIR="${PROJECT_DIR}/.claude"
 LEXICON="${CLAUDE_DIR}/lexicon.md"
@@ -47,8 +53,18 @@ if [ -f "${LEXICON}" ]; then
   fi
 fi
 
-# Extract transcript_path from the JSON payload without requiring jq.
+# Extract transcript_path from the JSON payload without requiring jq. The sed
+# regex assumes the value contains no escaped quotes (transcript paths in
+# practice never do). If a python3 interpreter is available, prefer it as a
+# robust fallback; otherwise stick with sed.
 TRANSCRIPT_PATH="$(printf '%s' "${PAYLOAD}" | sed -n 's/.*"transcript_path"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n1)"
+if [ -z "${TRANSCRIPT_PATH}" ] && command -v python3 >/dev/null 2>&1; then
+  TRANSCRIPT_PATH="$(printf '%s' "${PAYLOAD}" | python3 -c 'import json,sys
+try:
+    print(json.load(sys.stdin).get("transcript_path",""))
+except Exception:
+    pass' 2>/dev/null)"
+fi
 
 if [ -z "${TRANSCRIPT_PATH}" ] || [ ! -r "${TRANSCRIPT_PATH}" ]; then
   log "skip: transcript_path missing or unreadable"
@@ -80,4 +96,7 @@ status=$?
 end=$(date +%s)
 log "end: status=${status} duration=$((end - start))s"
 
-exit "${status}"
+# Always exit 0: this is an async hook. Returning the subprocess status would
+# risk propagating exit code 2 (the Stop-hook block signal) to the user's main
+# session, forcing Claude to keep responding when the subprocess hits an error.
+exit 0

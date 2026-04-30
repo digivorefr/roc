@@ -80,6 +80,7 @@ disable-model-invocation: true   # Only if the skill is manual-only (e.g. /rocke
 - **`name`**: lowercase, hyphens, max 64 chars. Match the directory name.
 - **`description`**: third person, max 1024 chars. Two questions to answer: *what does this skill do?* and *when should Claude invoke it?* Front-load the trigger keywords (`/<plugin>:<name>` first, then natural-language patterns in EN and FR). **Do NOT summarize the workflow in the description** — Claude may follow the description instead of reading the body.
 - **`disable-model-invocation: true`**: add this only if the skill must be triggered explicitly by the user (e.g. modal skills like `/rocket:myself`, `/rocket:no-code`). The default — auto-invocation by Claude — is preferred for most skills.
+- **`context: fork`** + **`agent: <name>`**: make the skill execute in a forked subagent with an isolated context. Use these for skills that must analyse the conversation in the background without blocking the main turn (e.g. `context-update`). The `agent` field picks the subagent type to run inside (`general-purpose`, `Explore`, or any custom subagent).
 - Do **not** set `user-invocable: true`. It is the default and adds noise.
 
 ### Body rules
@@ -123,6 +124,7 @@ color: <visual hint>
 - Body opens with a role statement, then sections like `## Core Philosophy`, `## Workflow`, `## What You Must NOT Do`.
 - An agent that implements features (`spec-maker`) must read the consumer's `CLAUDE.md` for stack rules and use the verification command declared there.
 - An agent that produces documents (`spec-writer`) must defer stack rules to the consumer's `CLAUDE.md` rather than restating them.
+- `spec-maker` and `spec-writer` share an identical Step 0 (`Read .claude/lexicon.md if it exists...`). When changing it in one agent, apply the same change to the other to prevent drift.
 
 ## Adding a new plugin
 

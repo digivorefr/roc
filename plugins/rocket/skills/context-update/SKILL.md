@@ -110,7 +110,7 @@ If the budget cannot be met without dropping flagged entries, stop pruning and e
 
 1. Compose the file with the header comment first, areas sorted alphabetically, concepts sorted alphabetically within each area, four bullets per entry in the order `Definition` / `Aliases` / `Relations` / `Source`.
 2. Resolve the project root (use `$CLAUDE_PROJECT_DIR` if set, otherwise the cwd).
-3. Acquire an exclusive `flock` on `.claude/lexicon.md.lock` for the duration of write.
+3. Acquire a **non-blocking** exclusive `flock` on `.claude/lexicon.md.lock` (`flock -n`). On contention, abort with the summary `Lexicon update already in progress.` rather than waiting — this matches the wrapper's skip-on-contention behaviour.
 4. Write the rendered content to `.claude/lexicon.md.tmp`.
 5. `mv .claude/lexicon.md.tmp .claude/lexicon.md` (atomic on POSIX filesystems).
 6. Release the lock.
@@ -178,3 +178,25 @@ Hi! I added two new entries to the lexicon. The first one is about webhooks...
 ```
 
 (Too verbose, friendly tone, restates content already in the file.)
+
+## Implementation notes
+
+- The wrapper at `plugins/rocket/hooks/update-context.sh` reads the hook payload from stdin (JSON with a `transcript_path` field). Earlier drafts assumed an environment variable; the actual hook contract is stdin JSON.
+- The wrapper sets and exports `ROCKET_CONTEXT_UPDATE_INVOKED=1` before spawning the `claude -p` subprocess, so the subprocess's own `Stop` hook fires on a guard that exits immediately. Without this guard, the wrapper would re-invoke itself recursively (the lexicon-mtime debounce alone does not block the recursion when the subprocess concludes "No update needed.").
+- The wrapper exits 0 unconditionally because this is an `async` hook; propagating the subprocess status would risk emitting exit code 2 (the `Stop`-hook block signal) into the user's main session.
+- Both wrapper and skill use **non-blocking** `flock -n` on `.claude/lexicon.md.lock`. Concurrent fires skip rather than queue.
+
+## Manual validation
+
+Run these scenarios after any change to this skill, the wrapper, or the hook config. There is no automated test suite.
+
+1. **Cold start** — fresh project with no `.claude/` directory. Run `/rocket:setup`. Expected: `.claude/lexicon.md` created with the canonical header line, `## Project semantic context` block inserted in `CLAUDE.md`.
+2. **First hook fire** — finish one assistant turn that introduces a new domain concept. Expected: `.claude/lexicon-update.log` records `start` + `end`, lexicon receives a new entry, exit status 0.
+3. **No-op turn** — finish a turn that introduces nothing new. Expected: log records the run; the skill's summary in the log says `No update needed.`; lexicon mtime unchanged; **next turn fires again without infinite loop** (the `ROCKET_CONTEXT_UPDATE_INVOKED` sentinel prevents recursion regardless of mtime).
+4. **Debounce** — finish two assistant turns within 30 s, both updating the lexicon. Expected: second fire logs `skip: debounced (...)` and exits 0.
+5. **Lock contention** — start two manual `/rocket:context-update` invocations simultaneously (or trigger one manually while a hook fire is in progress). Expected: one acquires the lock, the other logs `skip: lock held by another invocation` (wrapper) or emits `Lexicon update already in progress.` (skill).
+6. **`claude` CLI missing** — temporarily remove `claude` from `PATH`. Expected: hook exits silently, no log entry, no error surfaced to the user.
+7. **Manual lexicon edit** — edit `.claude/lexicon.md` by hand to add a malformed entry (e.g. missing `Aliases` bullet). Run `/rocket:context-update`. Expected: skill flags the entry with `<!-- TODO: invariant ... -->` rather than rewriting it; existing valid entries untouched.
+8. **Idempotent re-run** — invoke `/rocket:context-update` twice in a row on an unchanged conversation. Expected: second invocation outputs `No update needed.` and does not rewrite the file.
+9. **Size cap** — manually balloon the lexicon past 300 lines, then run the skill. Expected: oldest non-flagged, non-referenced entries pruned until the file fits.
+10. **Recursion guard** — inspect the log of any successful run. Expected: never two consecutive `start:` lines without an intervening `end:`; never an exponential growth of log lines from a single user turn.

@@ -26,6 +26,7 @@ Before writing any code, gather comprehensive knowledge:
    - Library documentation and API specifications relevant to the spec
    - Best practices for the specific implementation
    - Similar implementations in the codebase to copy patterns from
+   - The project's `.claude/lexicon.md` (already loaded at workflow Step 0) — the canonical source for project-specific vocabulary and decisions; align your design and naming on it
 
 2. **Never guess or assume** — if you lack knowledge about how a library works, what the optimal approach is, how similar code is structured elsewhere, or API specifications and data formats: STOP and use search/Context7 to fill that gap.
 
