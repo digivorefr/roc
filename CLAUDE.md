@@ -4,9 +4,11 @@ This file applies when **working on this repository** (authoring or maintaining 
 
 ## What this repo is
 
-A Claude Code **marketplace** named `roc` (displayed as **Roc**). It currently distributes one plugin: `rocket` (displayed as **Rocket 🚀**). The marketplace is structured to host more plugins under `plugins/<name>/` over time.
+A Claude Code **marketplace** named `roc` (displayed as **Roc**). It currently distributes two plugins: `rocket` (displayed as **Rocket 🚀**) and `my-hand` (displayed as **my-hand 🖐**). The marketplace is structured to host more plugins under `plugins/<name>/` over time.
 
-The `rocket` plugin ships a curated set of skills and agents for assisted development. Every skill and agent here is meant to be **stack-agnostic** and reused across multiple codebases.
+`rocket` ships a curated set of skills and agents for assisted development; every skill and agent here is meant to be **stack-agnostic** and reused across multiple codebases.
+
+`my-hand` ships a single slash command (`/my-hand:remarkable-grab`) plus a compiled binary that captures pages from a reMarkable 2 tablet over USB. It is the first sanctioned exception to the stack-agnostic rule (see Hard rule 4).
 
 Each consumer project declares its own stack-specific conventions (test command, typing rules, error-handling style) in its own `CLAUDE.md`. The conventions block is generated interactively by the [`/rocket:setup`](plugins/rocket/skills/setup/SKILL.md) skill — its template is the source of truth. The plugins read those rules instead of carrying their own.
 
@@ -16,14 +18,21 @@ Each consumer project declares its own stack-specific conventions (test command,
 .claude-plugin/marketplace.json     Marketplace manifest (lists the plugins)
 plugins/<plugin-name>/
   .claude-plugin/plugin.json        Plugin manifest
-  agents/                           Agent definitions, one .md per agent
-  skills/                           Skills, one directory per skill, each with a SKILL.md
+  agents/                           Optional: agent definitions, one .md per agent
+  skills/                           Optional: skills, one directory per skill, each with a SKILL.md
+  commands/                         Optional: slash commands, one .md per command
   hooks/                            Optional: hooks.json + helper scripts invoked by the harness
+  bin/<platform>/                   Optional: compiled binaries (non-portable plugins, per Hard rule 4)
+  build/                            Optional: maintainer build script and sources for the binary
+  README.md                         Plugin-specific user-facing doc
+specs/                              Functional specs for plugins or features (one .md per topic/version)
 README.md                           Public documentation (install, list of plugins/skills/agents)
 CLAUDE.md                           This file — maintainer guide
 ```
 
-Currently there is one plugin: `plugins/rocket/`. Add a sibling directory under `plugins/` to ship a new plugin and register it in `marketplace.json#plugins`.
+A plugin uses whichever of `agents/`, `skills/`, `commands/`, `hooks/`, `bin/`, `build/` it needs — none are mandatory. `rocket` uses `agents/`, `skills/`, `hooks/`. `my-hand` uses `commands/`, `bin/darwin-arm64/`, `build/`.
+
+Currently there are two plugins: `plugins/rocket/` and `plugins/my-hand/`. Add a sibling directory under `plugins/` to ship a new plugin and register it in `marketplace.json#plugins`.
 
 The conventions block template lives inside [`plugins/rocket/skills/setup/SKILL.md`](plugins/rocket/skills/setup/SKILL.md) (between `=== TEMPLATE START ===` and `=== TEMPLATE END ===`). It is the single source of truth — edit it there.
 
@@ -129,6 +138,33 @@ color: <visual hint>
 - An agent that implements features (`spec-maker`) must read the consumer's `CLAUDE.md` for stack rules and use the verification command declared there.
 - An agent that produces documents (`spec-writer`) must defer stack rules to the consumer's `CLAUDE.md` rather than restating them.
 - `spec-maker` and `spec-writer` share an identical Step 0 (`Read .claude/lexicon.md if it exists...`). When changing it in one agent, apply the same change to the other to prevent drift.
+
+## Authoring a new slash command
+
+Slash commands live in `plugins/<plugin>/commands/<name>.md`. They are namespaced as `/<plugin>:<name>`. Frontmatter:
+
+```yaml
+---
+description: <see rules below — same conventions as a skill description>
+argument-hint: <one-line hint shown in the TUI when the user types the command>
+allowed-tools:
+  - Bash("${CLAUDE_PLUGIN_ROOT}/path/to/binary-or-script":*)
+  - Read
+---
+```
+
+- **`description`**: same rules as a skill description (third person, front-loaded triggers, EN/FR triggers OK). Front-load `/<plugin>:<command>` first, then natural-language patterns.
+- **`argument-hint`**: optional but recommended. Single line, e.g. `[notebook-name]\n[optional free-text prompt]`.
+- **`allowed-tools`**: pre-approves the tool calls the command body needs so the user is not prompted on every invocation.
+  - For a `Bash(...)` pattern that calls a script or binary at `${CLAUDE_PLUGIN_ROOT}/...`, **wrap the path in double quotes inside the pattern**: `Bash("${CLAUDE_PLUGIN_ROOT}/bin/.../my-hand-grab":*)`. The `!`-prefix invocation in the body also quotes the path; the permission matcher compares strings literally, so unquoted patterns fail to match a quoted invocation. (Lesson learned in commit `0f196c8`.)
+  - List every other tool the command needs (`Read`, etc.) so the model can use them without per-invocation approval.
+
+### Body rules
+
+- The body of the slash command markdown is the prompt the model sees after `$ARGUMENTS` substitution.
+- A `!`-prefix line runs a bash command and inlines its stdout into the body. Use this to call a script or binary that produces the prompt body dynamically.
+- Keep the body short. Most logic should live in the script/binary the body invokes; the body is a thin wrapper that runs it and forwards the output.
+- The script the body invokes must always exit `0` and print a well-formed prompt body even on error. Crashing it propagates a failure to the slash command and the model loses context.
 
 ## Adding a new plugin
 

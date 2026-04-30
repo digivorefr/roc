@@ -1,6 +1,9 @@
 # Roc — Claude Code marketplace
 
-A Claude Code marketplace bundling AI-assisted development plugins. Currently ships one plugin: **Rocket 🚀** — skills and agents that help a senior developer write specs, implement them, review changes, and produce commit and PR messages.
+A Claude Code marketplace bundling AI-assisted development plugins. Currently ships two plugins:
+
+- **Rocket 🚀** — stack-agnostic skills and agents that help a senior developer write specs, implement them, review changes, and produce commit and PR messages.
+- **my-hand 🖐** — captures the current page of a reMarkable 2 tablet over USB and delivers it to the model as a multimodal image. macOS-arm64 only; sanctioned non-portability exception per the repo's authoring rules.
 
 Rocket is opinionated: each project that uses it should declare its own test command, stack conventions, and quality gates in its `CLAUDE.md` so the agents read them instead of carrying hardcoded assumptions. Run [`/rocket:setup`](#rocketsetup) to bootstrap that block interactively.
 
@@ -11,9 +14,10 @@ From inside Claude Code:
 ```text
 /plugin marketplace add digivorefr/roc
 /plugin install rocket@roc
+/plugin install my-hand@roc      # optional, requires a reMarkable 2 on macOS-arm64
 ```
 
-From Claude Desktop: open **Customize → Plugins personnels**, click **Ajouter une marketplace**, paste `digivorefr/roc` in the URL field, then install the `rocket` plugin from the marketplace listing.
+From Claude Desktop: open **Customize → Plugins personnels**, click **Ajouter une marketplace**, paste `digivorefr/roc` in the URL field, then install the desired plugin from the marketplace listing.
 
 ## Rocket 🚀
 
@@ -92,6 +96,33 @@ Initializes or refreshes the `## Project conventions` block in the current proje
 - `/rocket:setup`
 
 Manual-only — never auto-triggered. The block it writes is consumed by `rocket:spec-maker` and `rocket:spec-writer`.
+
+## my-hand 🖐
+
+Captures the current page of a reMarkable 2 tablet over its USB web interface and delivers it to the model as a multimodal image. Useful when you think on paper and want Claude to read what you just drew or wrote.
+
+### Prerequisites
+
+- A **reMarkable 2** tablet, firmware **3.x or later**.
+- Tablet plugged in over **USB**, screen **unlocked**, and **USB web interface** enabled (`Settings → Storage → USB web interface`). The device must answer at `http://10.11.99.1`.
+- **macOS-arm64**. Linux and Intel Mac are out of scope.
+- **No runtime dependencies.** Ships a self-contained ~17 MB binary.
+
+### Usage
+
+```text
+/my-hand:remarkable-grab               # list mode: show all notebooks on the device
+/my-hand:remarkable-grab Claude        # capture the current page of the "Claude" notebook
+```
+
+Anything after the first newline is forwarded to the model as instructions for what to do with the captured image:
+
+```text
+/my-hand:remarkable-grab Claude
+What does this say? Reply only in French.
+```
+
+See [`plugins/my-hand/README.md`](plugins/my-hand/README.md) for details on the rendering pipeline, troubleshooting, and what is intentionally deferred.
 
 ## Trigger language
 
