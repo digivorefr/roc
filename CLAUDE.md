@@ -63,6 +63,10 @@ A skill or agent that only works in one stack does not belong in this marketplac
 
 All identifiers, frontmatter, comments, and prose are in English. Skill descriptions may list French triggers as alternative keywords (the user base is bilingual), but skill output is always English.
 
+### 4. Exceptions to stack-agnosticism
+
+A plugin may depend on local hardware or a specific OS if (a) it serves a narrow audience of operators who already own that hardware, (b) it has no equivalent that fits within the consumer's `CLAUDE.md` model, and (c) the plugin's `README.md` explicitly states the hardware/OS prerequisite. `my-hand` is the first such plugin: it requires a reMarkable 2 tablet plugged in over USB and is tested only on macOS.
+
 ## Authoring a new skill
 
 A skill lives in `plugins/<plugin>/skills/<name>/SKILL.md`. Frontmatter follows the [official spec](https://code.claude.com/docs/en/skills#frontmatter-reference).

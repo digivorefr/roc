@@ -14,9 +14,10 @@ export ROCKET_CONTEXT_UPDATE_INVOKED=1
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$PWD}"
 CLAUDE_DIR="${PROJECT_DIR}/.claude"
 LEXICON="${CLAUDE_DIR}/lexicon.md"
-LOCK="${CLAUDE_DIR}/lexicon.md.lock"
+LOCK_DIR="${CLAUDE_DIR}/lexicon.md.lock.d"
 LOG="${CLAUDE_DIR}/lexicon-update.log"
 DEBOUNCE_SECONDS=30
+STALE_LOCK_SECONDS=600
 LOG_MAX_BYTES=$((1024 * 1024))
 LOG_KEEP=3
 
@@ -74,12 +75,22 @@ fi
 start=$(date +%s)
 log "start: project=${PROJECT_DIR} transcript=${TRANSCRIPT_PATH}"
 
-# Acquire a non-blocking exclusive lock; bail out if another run is in progress.
-exec 9>"${LOCK}" || exit 0
-if ! flock -n 9; then
+# Acquire a non-blocking exclusive lock via mkdir (atomic on POSIX, portable;
+# flock is not available by default on macOS). Reap a stale lock if its mtime
+# is older than STALE_LOCK_SECONDS — protects against crashed prior runs that
+# could not clean up.
+if [ -d "${LOCK_DIR}" ]; then
+  lock_mtime=$(stat -f %m "${LOCK_DIR}" 2>/dev/null || stat -c %Y "${LOCK_DIR}" 2>/dev/null || echo 0)
+  if [ -n "${lock_mtime}" ] && [ "$(($(date +%s) - lock_mtime))" -ge "${STALE_LOCK_SECONDS}" ]; then
+    log "reaping stale lock (mtime ${lock_mtime})"
+    rmdir "${LOCK_DIR}" 2>/dev/null || rm -rf "${LOCK_DIR}"
+  fi
+fi
+if ! mkdir "${LOCK_DIR}" 2>/dev/null; then
   log "skip: lock held by another invocation"
   exit 0
 fi
+trap 'rmdir "${LOCK_DIR}" 2>/dev/null' EXIT INT TERM HUP
 
 PROMPT='/rocket:context-update
 

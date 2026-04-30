@@ -1,0 +1,13 @@
+{
+  "name": "my-hand",
+  "version": "0.2.0",
+  "description": "my-hand — capture pages from a reMarkable 2 tablet into Claude Code as multimodal images (macOS, USB)",
+  "author": {
+    "name": "Pierre Bonnin",
+    "email": "hello@digivore.fr"
+  },
+  "homepage": "https://github.com/digivorefr/roc",
+  "repository": "https://github.com/digivorefr/roc",
+  "license": "MIT",
+  "keywords": ["claude-code", "remarkable", "multimodal", "macos"]
+}

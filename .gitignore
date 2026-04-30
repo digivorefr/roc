@@ -1,1 +1,45 @@
+# macOS
 .DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+
+# Editors / IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Personal Claude state (per repo CLAUDE.md — never committed)
+CLAUDE.local.md
+.claude/settings.local.json
+.claude/.local/
+.claude/*.lock
+.claude/*.lock.d/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+
+# Python — bytecode and metadata
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Plugin build artefacts (my-hand and any future plugin using PyInstaller)
+# The build script lives at plugins/<plugin>/build/build.sh and creates
+# these dotted intermediates inside the same directory; they are wiped at
+# start and end of a successful build but persist if a build crashes.
+.venv/
+.pyinstaller-work/
+.pyinstaller-dist/
+.pyinstaller-spec/
+.pyinstaller-rthook.py
