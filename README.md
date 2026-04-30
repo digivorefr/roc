@@ -75,6 +75,14 @@ Forces a chat-only response. The agent will not create, edit, or delete any file
 
 Manual-only — never auto-triggered.
 
+#### `/rocket:context-update`
+
+Updates the project's semantic lexicon at `.claude/lexicon.md` from the current conversation. The lexicon is a compact catalog of project-specific concepts, vocabulary, patterns, and decisions, read by `rocket:spec-writer` and `rocket:spec-maker` to align their vocabulary with yours.
+
+- `/rocket:context-update`
+
+Auto-triggered by Claude when a major semantic shift just happened in the conversation. Also auto-runs in the background after every assistant turn via a `Stop` hook (asynchronous, non-blocking, Haiku-tier subprocess). The hook is debounced 30 s and logs to `.claude/lexicon-update.log` (rotated at 1 MB, last 3 kept). Bootstrap the lexicon and the `## Project semantic context` reference in `CLAUDE.md` by running [`/rocket:setup`](#rocketsetup).
+
 #### `/rocket:setup`
 
 Initializes or refreshes the `## Project conventions` block in the current project's `CLAUDE.md`. Auto-detects stack signals from manifests (`package.json`, `pyproject.toml`, lockfiles, etc.), asks a few questions to fill the rest, then writes the block. Creates `CLAUDE.md` if it does not exist.

@@ -116,6 +116,26 @@ Apply the changes the user approved. Insertion logic:
 - **Per-section overlap actions** — apply each independently at the location of the existing overlapping section.
 - **No overlap, no existing block** — pick the insertion point per [Insertion point rules](#insertion-point-rules).
 
+### Step 8b — Semantic context bootstrap
+
+Always run after Step 8, regardless of action taken (create / replace / merge / keep both):
+
+1. **Lexicon file**: if `.claude/lexicon.md` does not exist, create it with this single line (no other content):
+
+   ```
+   <!-- Auto-maintained by rocket:context-update. Edits are preserved when consistent. -->
+   ```
+
+   Create the `.claude/` directory if missing. If the file already exists, leave it untouched.
+
+2. **CLAUDE.md reference block**: ensure `CLAUDE.md` contains a `## Project semantic context` block referencing `.claude/lexicon.md`. Compose internally in English using the [Semantic context template](#semantic-context-template), then translate to the target language from Step 3 using the same logic as Step 6 (translate prose, headings, bullets; keep code blocks, file paths, and proper nouns untranslated). Apply the same tone adaptation per [Style adaptation guidelines](#style-adaptation-guidelines).
+
+   Insertion:
+   - If a block of equivalent semantic intent already exists (heading like "Project semantic context", "Contexte sémantique du projet", "Lexicon", or any heading whose body references `.claude/lexicon.md`): leave it untouched.
+   - Otherwise: insert it immediately after the conventions block written in Step 8, with one blank line separator on each side.
+
+   This insertion is included in the Step 7 diff preview when it applies. If the user picks `Cancel` at Step 7, this bootstrap is also cancelled.
+
 ### Step 9 — Summary
 
 Output a short summary, under 12 lines, no emojis:
@@ -126,6 +146,7 @@ Output a short summary, under 12 lines, no emojis:
 - Sections included, sections skipped (with why).
 - Overlap resolutions applied.
 - Detected values that were accepted as-is.
+- Whether `.claude/lexicon.md` was created or already existed, and whether the `## Project semantic context` block was inserted or already present.
 - Any `<TO FILL: ...>` placeholder still in the file that the user should review manually.
 
 ## Style adaptation guidelines
@@ -156,6 +177,7 @@ Canonical heading translations (composed in English internally; rendered in the 
 | Naming and structure          | Nommage et structure                |
 | Async control flow            | Asynchrone et concurrence           |
 | What NOT to do                | Ce qu'il ne faut PAS faire          |
+| Project semantic context      | Contexte sémantique du projet       |
 
 For other languages, translate naturally — do not transliterate. Code blocks, file paths, command lines, library names, and proper nouns stay in their original form.
 
@@ -231,6 +253,16 @@ If it fails, fix the underlying issue. Never bypass it (no `--no-verify`, no rul
 - Do not write comments that restate what the code does — only comments that explain non-obvious *why*.
 - Do not create README/docs files unless the user asks.
 === TEMPLATE END ===
+
+## Semantic context template
+
+Used by Step 8b. Compose internally in English; translate per Step 6 if the target language is not English. The link target `.claude/lexicon.md` and the path inside the link text stay untranslated.
+
+=== SEMANTIC CONTEXT TEMPLATE START ===
+## Project semantic context
+
+Project-specific concepts, vocabulary, patterns, and decisions are documented in [`.claude/lexicon.md`](.claude/lexicon.md). Agents read this file before generating specs, plans, or implementations and align their vocabulary on it. The file is auto-maintained by `rocket:context-update`; manual edits are preserved when consistent.
+=== SEMANTIC CONTEXT TEMPLATE END ===
 
 ## Typing rule variants
 

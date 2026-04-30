@@ -18,6 +18,7 @@ plugins/<plugin-name>/
   .claude-plugin/plugin.json        Plugin manifest
   agents/                           Agent definitions, one .md per agent
   skills/                           Skills, one directory per skill, each with a SKILL.md
+  hooks/                            Optional: hooks.json + helper scripts invoked by the harness
 README.md                           Public documentation (install, list of plugins/skills/agents)
 CLAUDE.md                           This file — maintainer guide
 ```

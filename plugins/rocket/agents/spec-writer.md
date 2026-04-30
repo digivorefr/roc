@@ -43,6 +43,7 @@ Read the project's `CLAUDE.md` (root and nested) before writing the spec. It dec
 
 ## Workflow
 
+0. Read `.claude/lexicon.md` if it exists. Use the vocabulary, concept relationships, and decisions it captures. When introducing a term not present in the lexicon, flag it explicitly so it can be added in a future update.
 1. Receive user requirements
 2. Read the project's `CLAUDE.md` for stack conventions
 3. Use Context7 and web search to research the domain and existing implementations

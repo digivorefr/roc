@@ -85,6 +85,7 @@ Be concise, professional, pragmatic, and technical. Do not be friendly or seek v
 
 ## Workflow
 
+0. Read `.claude/lexicon.md` if it exists. Use the vocabulary, concept relationships, and decisions it captures. When introducing a term not present in the lexicon, flag it explicitly so it can be added in a future update.
 1. Acknowledge the specification received
 2. Read the project's `CLAUDE.md` and gather necessary knowledge about the stack, existing patterns, and requirements
 3. Present your understanding and implementation approach
