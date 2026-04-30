@@ -4,11 +4,11 @@ This file applies when **working on this repository** (authoring or maintaining 
 
 ## What this repo is
 
-A Claude Code **marketplace** named `roc`. It currently distributes one plugin (`dev`) and is structured to host more plugins under `plugins/<name>/` over time.
+A Claude Code **marketplace** named `roc` (displayed as **Roc**). It currently distributes one plugin: `rocket` (displayed as **Rocket 🚀**). The marketplace is structured to host more plugins under `plugins/<name>/` over time.
 
-The `dev` plugin ships a curated set of skills and agents for assisted development. Every skill and agent here is meant to be **stack-agnostic** and reused across multiple codebases.
+The `rocket` plugin ships a curated set of skills and agents for assisted development. Every skill and agent here is meant to be **stack-agnostic** and reused across multiple codebases.
 
-Each consumer project declares its own stack-specific conventions (test command, typing rules, error-handling style) in its own `CLAUDE.md`. The conventions block is generated interactively by the [`/dev:setup`](plugins/dev/skills/setup/SKILL.md) skill — its template is the source of truth. The plugins read those rules instead of carrying their own.
+Each consumer project declares its own stack-specific conventions (test command, typing rules, error-handling style) in its own `CLAUDE.md`. The conventions block is generated interactively by the [`/rocket:setup`](plugins/rocket/skills/setup/SKILL.md) skill — its template is the source of truth. The plugins read those rules instead of carrying their own.
 
 ## Repository structure
 
@@ -22,19 +22,19 @@ README.md                           Public documentation (install, list of plugi
 CLAUDE.md                           This file — maintainer guide
 ```
 
-Currently there is one plugin: `plugins/dev/`. Add a sibling directory under `plugins/` to ship a new plugin and register it in `marketplace.json#plugins`.
+Currently there is one plugin: `plugins/rocket/`. Add a sibling directory under `plugins/` to ship a new plugin and register it in `marketplace.json#plugins`.
 
-The conventions block template lives inside [`plugins/dev/skills/setup/SKILL.md`](plugins/dev/skills/setup/SKILL.md) (between `=== TEMPLATE START ===` and `=== TEMPLATE END ===`). It is the single source of truth — edit it there.
+The conventions block template lives inside [`plugins/rocket/skills/setup/SKILL.md`](plugins/rocket/skills/setup/SKILL.md) (between `=== TEMPLATE START ===` and `=== TEMPLATE END ===`). It is the single source of truth — edit it there.
 
 ## Working commands
 
 ```bash
 # Test a single plugin locally without installing it
-claude --plugin-dir plugins/dev
+claude --plugin-dir plugins/rocket
 
 # Test the whole marketplace from this repo (installs the plugins it lists)
 /plugin marketplace add .
-/plugin install dev@roc
+/plugin install rocket@roc
 
 # After editing a skill or agent, reload without restarting Claude Code
 /reload-plugins
@@ -72,13 +72,13 @@ A skill lives in `plugins/<plugin>/skills/<name>/SKILL.md`. Frontmatter follows 
 ---
 name: <kebab-case, matches directory name>
 description: <see rules below>
-disable-model-invocation: true   # Only if the skill is manual-only (e.g. /dev:myself, /dev:no-code)
+disable-model-invocation: true   # Only if the skill is manual-only (e.g. /rocket:myself, /rocket:no-code)
 ---
 ```
 
 - **`name`**: lowercase, hyphens, max 64 chars. Match the directory name.
 - **`description`**: third person, max 1024 chars. Two questions to answer: *what does this skill do?* and *when should Claude invoke it?* Front-load the trigger keywords (`/<plugin>:<name>` first, then natural-language patterns in EN and FR). **Do NOT summarize the workflow in the description** — Claude may follow the description instead of reading the body.
-- **`disable-model-invocation: true`**: add this only if the skill must be triggered explicitly by the user (e.g. modal skills like `/dev:myself`, `/dev:no-code`). The default — auto-invocation by Claude — is preferred for most skills.
+- **`disable-model-invocation: true`**: add this only if the skill must be triggered explicitly by the user (e.g. modal skills like `/rocket:myself`, `/rocket:no-code`). The default — auto-invocation by Claude — is preferred for most skills.
 - Do **not** set `user-invocable: true`. It is the default and adds noise.
 
 ### Body rules
@@ -96,7 +96,7 @@ disable-model-invocation: true   # Only if the skill is manual-only (e.g. /dev:m
 Good (specific trigger + intent):
 
 ```yaml
-description: Generate git commit messages from staged or unstaged changes. Use this skill whenever the user invokes "/dev:commit-writer", asks for a commit message, says "what should I commit?", "redige un message de commit", or any similar request.
+description: Generate git commit messages from staged or unstaged changes. Use this skill whenever the user invokes "/rocket:commit-writer", asks for a commit message, says "what should I commit?", "redige un message de commit", or any similar request.
 ```
 
 Bad (no triggers, vague):
@@ -125,7 +125,7 @@ color: <visual hint>
 
 ## Adding a new plugin
 
-1. Create `plugins/<plugin-name>/.claude-plugin/plugin.json` with at minimum `name`, `version`, `description`, `author`. Use the [`dev` plugin manifest](plugins/dev/.claude-plugin/plugin.json) as a template.
+1. Create `plugins/<plugin-name>/.claude-plugin/plugin.json` with at minimum `name`, `version`, `description`, `author`. Use the [`rocket` plugin manifest](plugins/rocket/.claude-plugin/plugin.json) as a template.
 2. Create `plugins/<plugin-name>/skills/` and/or `plugins/<plugin-name>/agents/`.
 3. Register the plugin in [`.claude-plugin/marketplace.json`](.claude-plugin/marketplace.json) by appending an entry to `plugins[]` with `"source": "./plugins/<plugin-name>"`.
 4. Bump the marketplace `version` if applicable.
@@ -138,8 +138,8 @@ color: <visual hint>
 
 ## Validating changes locally
 
-1. From this repo's root: `claude --plugin-dir plugins/<plugin-name>` (e.g. `plugins/dev`).
-2. For each modified skill, run its slash command (`/dev:commit-writer`, etc.) on a test repo.
+1. From this repo's root: `claude --plugin-dir plugins/<plugin-name>` (e.g. `plugins/rocket`).
+2. For each modified skill, run its slash command (`/rocket:commit-writer`, etc.) on a test repo.
 3. For each modified agent, ask Claude to invoke it via the `Task` tool.
 4. Confirm the description triggers it: rephrase a natural-language prompt and check that Claude proposes the right skill.
 5. Run `/reload-plugins` between edits — no need to restart.

@@ -1,12 +1,12 @@
 ---
 name: setup
 disable-model-invocation: true
-description: Initialize or update the project's CLAUDE.md with the conventions block consumed by dev:spec-maker and dev:spec-writer. Reads any existing CLAUDE.md to detect language, tone, and overlapping sections, then asks the user how to integrate before writing. Auto-detects stack signals from manifests and from the existing CLAUDE.md prose. Manual-only — invoked by the user via "/dev:setup".
+description: Initialize or update the project's CLAUDE.md with the conventions block consumed by rocket:spec-maker and rocket:spec-writer. Reads any existing CLAUDE.md to detect language, tone, and overlapping sections, then asks the user how to integrate before writing. Auto-detects stack signals from manifests and from the existing CLAUDE.md prose. Manual-only — invoked by the user via "/rocket:setup".
 ---
 
 # Project conventions setup
 
-The user wants to add (or refresh) a project conventions block in this project's `CLAUDE.md`. That block is read by `dev:spec-maker` and `dev:spec-writer` to follow project-specific stack rules.
+The user wants to add (or refresh) a project conventions block in this project's `CLAUDE.md`. That block is read by `rocket:spec-maker` and `rocket:spec-writer` to follow project-specific stack rules.
 
 The skill must integrate the block **harmoniously** into whatever exists already: matching language, tone, heading depth, and avoiding content duplication. Drive an interactive flow that surfaces every integration decision to the user before writing.
 
@@ -174,7 +174,7 @@ The text between `=== TEMPLATE START ===` and `=== TEMPLATE END ===` is the lite
 === TEMPLATE START ===
 ## Project conventions
 
-<!-- Read by dev:spec-maker, dev:spec-writer -->
+<!-- Read by rocket:spec-maker, rocket:spec-writer -->
 
 ### Stack
 

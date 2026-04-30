@@ -1,7 +1,7 @@
 ---
 name: no-code
 disable-model-invocation: true
-description: Force a chat-only response with no code writing, no file edits, no tool use that modifies the filesystem. Manual-only — invoked by the user via "/dev:no-code" or "/no-code".
+description: Force a chat-only response with no code writing, no file edits, no tool use that modifies the filesystem. Manual-only — invoked by the user via "/rocket:no-code" or "/no-code".
 ---
 
 # No-Code Mode

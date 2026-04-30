@@ -1,7 +1,7 @@
 {
-  "name": "dev",
-  "version": "1.0.1",
-  "description": "Skills and agents for AI-assisted development workflows",
+  "name": "rocket",
+  "version": "1.0.0",
+  "description": "Rocket 🚀 — skills and agents for AI-assisted development workflows",
   "author": {
     "name": "Pierre Bonnin",
     "email": "hello@digivore.fr"

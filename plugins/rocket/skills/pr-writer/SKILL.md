@@ -1,6 +1,6 @@
 ---
 name: pr-writer
-description: Generate a structured, English, product-focused PR description organised by topic. Use this skill whenever the user invokes "/dev:pr-writer", asks for a pull request description, a PR summary, a PR body, says "write a PR description", "rédige une description de PR", "prépare un descriptif de PR", "PR body", "pull request body", or any similar request. The skill either scans the current git changes or accepts context provided by the user.
+description: Generate a structured, English, product-focused PR description organised by topic. Use this skill whenever the user invokes "/rocket:pr-writer", asks for a pull request description, a PR summary, a PR body, says "write a PR description", "rédige une description de PR", "prépare un descriptif de PR", "PR body", "pull request body", or any similar request. The skill either scans the current git changes or accepts context provided by the user.
 ---
 
 # PR Description Writer
