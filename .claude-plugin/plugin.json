@@ -1,9 +1,13 @@
 {
   "name": "roc",
   "version": "1.0.0",
-  "description": "Custom Claude plugin for IA assisted development",
+  "description": "Custom Claude Code plugin with skills and agents for AI-assisted development",
   "author": {
     "name": "Pierre Bonnin",
     "email": "pierre@merciyanis.com"
-  }
+  },
+  "homepage": "https://github.com/digivorefr/roc",
+  "repository": "https://github.com/digivorefr/roc",
+  "license": "MIT",
+  "keywords": ["claude-code", "skills", "agents", "code-review", "spec-driven"]
 }

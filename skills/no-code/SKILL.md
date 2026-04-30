@@ -1,7 +1,7 @@
 ---
 name: no-code
-user-invocable: true
-description: Force a chat-only response with no code writing, no file edits, no tool use that modifies the filesystem. Use this skill whenever the user says "/roc:no-code", "/no-code", "no code", "pas de code", "just explain", "explique juste", "don't write code", "don't touch the code", "réponds juste", "just answer", or any signal that the next request should be answered purely in conversation without creating or editing any files.
+disable-model-invocation: true
+description: Force a chat-only response with no code writing, no file edits, no tool use that modifies the filesystem. Manual-only — invoked by the user via "/roc:no-code" or "/no-code".
 ---
 
 # No-Code Mode
