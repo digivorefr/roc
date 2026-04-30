@@ -1,7 +1,7 @@
 ---
 name: spec-writer
 description: "Use this agent when the user requests documentation of features, architecture decisions, or implementation plans that need to be formalized into functional specifications. Trigger when the user asks for a functional spec, when a new feature needs to be designed and documented before implementation, or when complex requirements need to be clarified and structured for another developer or agent.\\n\\n<example>\\nContext: User wants to create a new data connector and needs clear specifications before implementation.\\nuser: \"I need to build a connector for Salesforce that syncs contacts and opportunities\"\\nassistant: \"I'll use the Task tool to launch the spec-writer agent to create comprehensive specifications for this connector.\"\\n<commentary>This is a new feature requiring structured documentation and analysis of existing patterns — spec-writer should gather requirements and produce the specification.</commentary>\\n</example>"
-model: opus
+model: inherit
 color: cyan
 ---
 
