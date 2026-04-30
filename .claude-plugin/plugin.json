@@ -1,0 +1,9 @@
+{
+  "name": "roc",
+  "version": "1.0.0",
+  "description": "Custom Claude plugin for IA assisted development",
+  "author": {
+    "name": "Pierre Bonnin",
+    "email": "pierre@merciyanis.com"
+  }
+}
