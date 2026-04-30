@@ -1,12 +1,12 @@
 ---
 name: setup
 disable-model-invocation: true
-description: Initialize or update the project's CLAUDE.md with the conventions block consumed by roc:spec-maker and roc:spec-writer. Auto-detects stack signals from manifests, asks a few questions to fill the rest, then writes the block to CLAUDE.md (creating the file if absent). Manual-only — invoked by the user via "/roc:setup".
+description: Initialize or update the project's CLAUDE.md with the conventions block consumed by dev:spec-maker and dev:spec-writer. Auto-detects stack signals from manifests, asks a few questions to fill the rest, then writes the block to CLAUDE.md (creating the file if absent). Manual-only — invoked by the user via "/dev:setup".
 ---
 
 # Project conventions setup
 
-The user wants to add (or refresh) the `## Project conventions` block in this project's `CLAUDE.md`. That block is read by `roc:spec-maker` and `roc:spec-writer` to follow project-specific stack rules.
+The user wants to add (or refresh) the `## Project conventions` block in this project's `CLAUDE.md`. That block is read by `dev:spec-maker` and `dev:spec-writer` to follow project-specific stack rules.
 
 Drive an interactive setup: detect what you can from the project's manifests, ask the user only for what cannot be inferred, then write the block.
 
@@ -106,7 +106,7 @@ Keep it under 10 lines. No emojis.
 The text between `=== TEMPLATE START ===` and `=== TEMPLATE END ===` is the literal block to write. Substitute every `<TO FILL: ...>` placeholder. Triple backticks inside the template are part of the output.
 
 === TEMPLATE START ===
-## Project conventions (read by `roc:spec-maker` and `roc:spec-writer`)
+## Project conventions (read by `dev:spec-maker` and `dev:spec-writer`)
 
 ### Stack
 

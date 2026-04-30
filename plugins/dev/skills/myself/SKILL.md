@@ -1,7 +1,7 @@
 ---
 name: myself
 disable-model-invocation: true
-description: Produce a precise change plan (file:line + short prose + why) for a human developer to apply themselves, instead of editing files. Manual-only — invoked by the user via "/roc:myself" or "/myself".
+description: Produce a precise change plan (file:line + short prose + why) for a human developer to apply themselves, instead of editing files. Manual-only — invoked by the user via "/dev:myself" or "/myself".
 ---
 
 # Myself Mode

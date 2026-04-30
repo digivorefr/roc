@@ -1,30 +1,40 @@
 # roc — maintainer guide
 
-This file applies when **working on this repository** (authoring or maintaining the plugin), not when *using* the plugin in another project.
+This file applies when **working on this repository** (authoring or maintaining the marketplace and the plugins it ships), not when *consuming* a plugin from another project.
 
 ## What this repo is
 
-A Claude Code plugin that ships a curated set of skills and agents for assisted development. It is consumed by other projects via `claude plugins add`. Every skill and agent here is meant to be **stack-agnostic** and reused across multiple codebases.
+A Claude Code **marketplace** named `roc`. It currently distributes one plugin (`dev`) and is structured to host more plugins under `plugins/<name>/` over time.
 
-Each consumer project declares its stack-specific conventions (test command, typing rules, error-handling style) in its own `CLAUDE.md`. The conventions block is generated interactively by the [`/roc:setup`](skills/setup/SKILL.md) skill — its template is the source of truth. The plugin reads those rules instead of carrying its own.
+The `dev` plugin ships a curated set of skills and agents for assisted development. Every skill and agent here is meant to be **stack-agnostic** and reused across multiple codebases.
+
+Each consumer project declares its own stack-specific conventions (test command, typing rules, error-handling style) in its own `CLAUDE.md`. The conventions block is generated interactively by the [`/dev:setup`](plugins/dev/skills/setup/SKILL.md) skill — its template is the source of truth. The plugins read those rules instead of carrying their own.
 
 ## Repository structure
 
 ```
-.claude-plugin/plugin.json   Plugin manifest (name, version, author, repo, license)
-agents/                      Agent definitions, one .md per agent
-skills/                      Skills, one directory per skill, each with a SKILL.md
-README.md                    Public documentation (install, list of skills/agents)
-CLAUDE.md                    This file — maintainer guide
+.claude-plugin/marketplace.json     Marketplace manifest (lists the plugins)
+plugins/<plugin-name>/
+  .claude-plugin/plugin.json        Plugin manifest
+  agents/                           Agent definitions, one .md per agent
+  skills/                           Skills, one directory per skill, each with a SKILL.md
+README.md                           Public documentation (install, list of plugins/skills/agents)
+CLAUDE.md                           This file — maintainer guide
 ```
 
-The conventions block template lives inside [`skills/setup/SKILL.md`](skills/setup/SKILL.md) (between `=== TEMPLATE START ===` and `=== TEMPLATE END ===`). It is the single source of truth — edit it there.
+Currently there is one plugin: `plugins/dev/`. Add a sibling directory under `plugins/` to ship a new plugin and register it in `marketplace.json#plugins`.
+
+The conventions block template lives inside [`plugins/dev/skills/setup/SKILL.md`](plugins/dev/skills/setup/SKILL.md) (between `=== TEMPLATE START ===` and `=== TEMPLATE END ===`). It is the single source of truth — edit it there.
 
 ## Working commands
 
 ```bash
-# Test the plugin locally without installing it
-claude --plugin-dir .
+# Test a single plugin locally without installing it
+claude --plugin-dir plugins/dev
+
+# Test the whole marketplace from this repo (installs the plugins it lists)
+/plugin marketplace add .
+/plugin install dev@roc
 
 # After editing a skill or agent, reload without restarting Claude Code
 /reload-plugins
@@ -36,25 +46,25 @@ There is no build step, no test runner, no lint. Validation is manual: load the 
 
 ### 1. Plugin code must be stack-agnostic
 
-The plugin is installed in projects with different stacks (TypeScript, Python, Go, etc.). Therefore:
+Plugins are installed in projects with different stacks (TypeScript, Python, Go, etc.). Therefore:
 
 - **Never hardcode stack-specific commands** (`yarn check`, `pytest`, `cargo build`, `docker compose ...`). Defer to the consumer's `CLAUDE.md`.
 - **Never hardcode language rules** (`no any`, `absolute imports`, `no async-in-loops`). Same — defer.
-- **Never reference a specific tool path** (`src/api/handlers/`). The plugin doesn't know the consumer's layout.
+- **Never reference a specific tool path** (`src/api/handlers/`). Plugins do not know the consumer's layout.
 
 If a skill or agent needs project-specific behavior, instruct it to read the consumer's `CLAUDE.md` instead of carrying assumptions.
 
 ### 2. Skills and agents must be portable
 
-A skill or agent that only works in one stack does not belong in this plugin. If you need stack-specific behavior, build it as a project-level skill in the consumer's `.claude/skills/` directory instead.
+A skill or agent that only works in one stack does not belong in this marketplace. If you need stack-specific behavior, build it as a project-level skill in the consumer's `.claude/skills/` directory instead.
 
 ### 3. English everywhere
 
-All identifiers, frontmatter, comments, and prose are in English. Skill descriptions may list French triggers as alternative keywords (the plugin user base is bilingual), but skill output is always English.
+All identifiers, frontmatter, comments, and prose are in English. Skill descriptions may list French triggers as alternative keywords (the user base is bilingual), but skill output is always English.
 
 ## Authoring a new skill
 
-A skill lives in `skills/<name>/SKILL.md`. Frontmatter follows the [official spec](https://code.claude.com/docs/en/skills#frontmatter-reference).
+A skill lives in `plugins/<plugin>/skills/<name>/SKILL.md`. Frontmatter follows the [official spec](https://code.claude.com/docs/en/skills#frontmatter-reference).
 
 ### Frontmatter rules
 
@@ -62,13 +72,13 @@ A skill lives in `skills/<name>/SKILL.md`. Frontmatter follows the [official spe
 ---
 name: <kebab-case, matches directory name>
 description: <see rules below>
-disable-model-invocation: true   # Only if the skill is manual-only (e.g. /myself, /no-code)
+disable-model-invocation: true   # Only if the skill is manual-only (e.g. /dev:myself, /dev:no-code)
 ---
 ```
 
 - **`name`**: lowercase, hyphens, max 64 chars. Match the directory name.
-- **`description`**: third person, max 1024 chars. Two questions to answer: *what does this skill do?* and *when should Claude invoke it?* Front-load the trigger keywords (`/roc:<name>` first, then natural-language patterns in EN and FR). **Do NOT summarize the workflow in the description** — Claude may follow the description instead of reading the body.
-- **`disable-model-invocation: true`**: add this only if the skill must be triggered explicitly by the user (e.g. modal skills like `/roc:myself`, `/roc:no-code`). The default — auto-invocation by Claude — is preferred for most skills.
+- **`description`**: third person, max 1024 chars. Two questions to answer: *what does this skill do?* and *when should Claude invoke it?* Front-load the trigger keywords (`/<plugin>:<name>` first, then natural-language patterns in EN and FR). **Do NOT summarize the workflow in the description** — Claude may follow the description instead of reading the body.
+- **`disable-model-invocation: true`**: add this only if the skill must be triggered explicitly by the user (e.g. modal skills like `/dev:myself`, `/dev:no-code`). The default — auto-invocation by Claude — is preferred for most skills.
 - Do **not** set `user-invocable: true`. It is the default and adds noise.
 
 ### Body rules
@@ -86,7 +96,7 @@ disable-model-invocation: true   # Only if the skill is manual-only (e.g. /mysel
 Good (specific trigger + intent):
 
 ```yaml
-description: Generate git commit messages from staged or unstaged changes. Use this skill whenever the user invokes "/roc:commit-writer", asks for a commit message, says "what should I commit?", "redige un message de commit", or any similar request.
+description: Generate git commit messages from staged or unstaged changes. Use this skill whenever the user invokes "/dev:commit-writer", asks for a commit message, says "what should I commit?", "redige un message de commit", or any similar request.
 ```
 
 Bad (no triggers, vague):
@@ -97,7 +107,7 @@ description: Helps with git commits.
 
 ## Authoring a new agent
 
-Agents live in `agents/<name>.md`. Frontmatter:
+Agents live in `plugins/<plugin>/agents/<name>.md`. Frontmatter:
 
 ```yaml
 ---
@@ -113,25 +123,35 @@ color: <visual hint>
 - An agent that implements features (`spec-maker`) must read the consumer's `CLAUDE.md` for stack rules and use the verification command declared there.
 - An agent that produces documents (`spec-writer`) must defer stack rules to the consumer's `CLAUDE.md` rather than restating them.
 
-## Plugin manifest rules
+## Adding a new plugin
 
-- Bump `version` in [`.claude-plugin/plugin.json`](.claude-plugin/plugin.json) on every behavioral change. Without a version bump, distributed installs use commit SHA and every commit counts as an update.
-- `name` is the namespace prefix. Skills become `/roc:<skill>`. Renaming the plugin breaks every consumer.
+1. Create `plugins/<plugin-name>/.claude-plugin/plugin.json` with at minimum `name`, `version`, `description`, `author`. Use the [`dev` plugin manifest](plugins/dev/.claude-plugin/plugin.json) as a template.
+2. Create `plugins/<plugin-name>/skills/` and/or `plugins/<plugin-name>/agents/`.
+3. Register the plugin in [`.claude-plugin/marketplace.json`](.claude-plugin/marketplace.json) by appending an entry to `plugins[]` with `"source": "./plugins/<plugin-name>"`.
+4. Bump the marketplace `version` if applicable.
+
+## Manifest rules
+
+- Bump `version` in the relevant `plugin.json` on every behavioral change of that plugin. Without a version bump, distributed installs use commit SHA and every commit counts as an update.
+- `plugin.json#name` is the **namespace prefix** for that plugin. Skills become `/<plugin>:<skill>`. Renaming a plugin breaks every consumer.
+- `marketplace.json#name` is the marketplace identifier used in `/plugin install <plugin>@<marketplace>`. Renaming the marketplace breaks every consumer's `/plugin marketplace add` line.
 
 ## Validating changes locally
 
-1. `claude --plugin-dir .` from this repo's root.
-2. For each modified skill, run its slash command (`/roc:commit-writer`, etc.) on a test repo.
+1. From this repo's root: `claude --plugin-dir plugins/<plugin-name>` (e.g. `plugins/dev`).
+2. For each modified skill, run its slash command (`/dev:commit-writer`, etc.) on a test repo.
 3. For each modified agent, ask Claude to invoke it via the `Task` tool.
 4. Confirm the description triggers it: rephrase a natural-language prompt and check that Claude proposes the right skill.
 5. Run `/reload-plugins` between edits — no need to restart.
+6. To validate the marketplace itself end-to-end, run `/plugin marketplace add .` then `/plugin install <plugin>@roc`.
 
 ## What NOT to do
 
 - Do not add a skill for a workflow that already exists as a built-in (e.g. `/init`, `/review`, `/security-review`).
 - Do not write code-style rules (indentation, quote style, semicolon policy). That is a linter's job in the consumer project.
 - Do not include `Test plan` sections in skill outputs — `pr-writer` enforces this rule, and any skill that generates documentation must follow it.
-- Do not add files to `.claude-plugin/` other than `plugin.json`. Skills, agents, and hooks live at the repo root.
+- Do not add files to a plugin's `.claude-plugin/` directory other than `plugin.json`. Skills, agents, and hooks live at the plugin root (`plugins/<plugin>/skills/`, `plugins/<plugin>/agents/`, `plugins/<plugin>/hooks/`).
+- Do not put `marketplace.json` anywhere other than the repo-root `.claude-plugin/`.
 - Do not commit `CLAUDE.local.md` or `.claude/settings.local.json`. They are personal.
 
 ## When this CLAUDE.md should change
@@ -140,7 +160,8 @@ Add to it when:
 
 - A skill or agent makes the same authoring mistake twice (hardcoded path, missing trigger, oversized description).
 - A new convention emerges from a refactor (e.g. all skills now use bilingual triggers).
-- The plugin spec changes upstream (frontmatter fields, namespace rules, manifest schema).
+- The plugin or marketplace spec changes upstream (frontmatter fields, namespace rules, manifest schema).
+- A new plugin is added under `plugins/` and warrants documentation specific to it.
 
 Keep entries terse. If a section grows past ~40 lines, split it into a file under `docs/` and link it.
 
@@ -149,4 +170,5 @@ Keep entries terse. If a section grows past ~40 lines, split it into a file unde
 - [Claude Code skills](https://code.claude.com/docs/en/skills)
 - [Skill authoring best practices](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices)
 - [Plugins guide](https://code.claude.com/docs/en/plugins)
+- [Plugin marketplaces](https://code.claude.com/docs/en/plugin-marketplaces)
 - [CLAUDE.md memory guide](https://code.claude.com/docs/en/memory)

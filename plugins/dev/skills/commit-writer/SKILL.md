@@ -1,6 +1,6 @@
 ---
 name: commit-writer
-description: Generate git commit messages from staged or unstaged changes. Use this skill whenever the user invokes "/roc:commit-writer", asks for a commit message, wants to describe their git changes, says "what should I commit?", "write a commit message", "redige un message de commit", "propose un commit", or any similar request involving summarizing git diffs into a commit message.
+description: Generate git commit messages from staged or unstaged changes. Use this skill whenever the user invokes "/dev:commit-writer", asks for a commit message, wants to describe their git changes, says "what should I commit?", "write a commit message", "redige un message de commit", "propose un commit", or any similar request involving summarizing git diffs into a commit message.
 ---
 
 # Git Commit Message Generator

@@ -1,6 +1,6 @@
 ---
 name: review
-description: Critical code review of changes before pushing. Use this skill whenever the user invokes "/roc:review", says "review", "relis le code", "polish", "review my changes", "check before push", "code review", "revue de code", "quality check", "vérifie le code", "final pass", "clean up before push", or any request to critically examine uncommitted/unpushed changes for quality, duplication, pattern consistency, or test coverage. Also trigger when the user asks to "DRY" their code, check for dead code, or verify integration with existing codebase patterns.
+description: Critical code review of changes before pushing. Use this skill whenever the user invokes "/dev:review", says "review", "relis le code", "polish", "review my changes", "check before push", "code review", "revue de code", "quality check", "vérifie le code", "final pass", "clean up before push", or any request to critically examine uncommitted/unpushed changes for quality, duplication, pattern consistency, or test coverage. Also trigger when the user asks to "DRY" their code, check for dead code, or verify integration with existing codebase patterns.
 ---
 
 # Code Review — Final Polish Pass
