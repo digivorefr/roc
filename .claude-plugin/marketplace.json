@@ -10,7 +10,7 @@
       "name": "dev",
       "source": "./plugins/dev",
       "description": "Skills (commit-writer, pr-writer, review, setup, myself, no-code) and agents (spec-writer, spec-maker) for senior-developer-assisted workflows",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "author": {
         "name": "Pierre Bonnin",
         "email": "hello@digivore.fr"
@@ -18,7 +18,13 @@
       "homepage": "https://github.com/digivorefr/roc",
       "repository": "https://github.com/digivorefr/roc",
       "license": "MIT",
-      "keywords": ["claude-code", "skills", "agents", "code-review", "spec-driven"]
+      "keywords": [
+        "claude-code",
+        "skills",
+        "agents",
+        "code-review",
+        "spec-driven"
+      ]
     }
   ]
 }
