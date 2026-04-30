@@ -1,6 +1,6 @@
 {
   "name": "my-hand",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "my-hand — capture pages from a reMarkable 2 tablet into Claude Code as multimodal images (macOS, USB)",
   "author": {
     "name": "Pierre Bonnin",
