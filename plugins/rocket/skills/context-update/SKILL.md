@@ -4,6 +4,16 @@ disable-model-invocation: false
 context: fork
 agent: general-purpose
 description: Update the project's semantic lexicon at .roc/rocket/lexicon.md from the current conversation. Use this skill whenever the user invokes "/rocket:context-update", asks to "update context", "refresh lexicon", "update the lexicon", "rebuild project vocabulary", "mets a jour le contexte", "mets a jour le lexique", "rafraichis le lexique", or any similar request. Auto-invoke when a major semantic shift just happened in the conversation (new domain concept, new architectural decision, redefinition of an existing term) and the lexicon should capture it before the next turn.
+allowed-tools:
+  - Bash(mkdir:*)
+  - Bash(rmdir:*)
+  - Bash(rm:*)
+  - Bash(mv:*)
+  - Bash(stat:*)
+  - Bash(date:*)
+  - Read(.roc/rocket/**)
+  - Write(.roc/rocket/**)
+  - Edit(.roc/rocket/**)
 ---
 
 # Project lexicon updater
