@@ -20,6 +20,11 @@ DEBOUNCE_SECONDS=30
 STALE_LOCK_SECONDS=600
 LOG_MAX_BYTES=$((1024 * 1024))
 LOG_KEEP=3
+# Transcripts can grow to tens of MB (full session JSONL). Haiku's context is
+# ~200K tokens (~750 KB). Cap the slice fed on stdin to keep room for the
+# prompt, the lexicon, the skill body, and the model's output. The skill is
+# expected to extract incremental concepts from the most recent activity.
+TRANSCRIPT_BYTE_CAP=$((400 * 1024))
 
 # Read hook payload from stdin (Claude Code passes a JSON object on stdin).
 PAYLOAD="$(cat || true)"
@@ -96,11 +101,20 @@ PROMPT='/rocket:context-update
 
 The transcript of the current Claude Code session is provided on stdin (JSONL, one event per line). Run the context-update workflow against it and the project lexicon.'
 
-# Pipe the transcript on stdin to the subprocess. cd into the project so the
-# skill resolves .claude/lexicon.md relative to the right root.
+# Pipe the (possibly truncated) transcript on stdin to the subprocess. cd into
+# the project so the skill resolves .claude/lexicon.md relative to the right
+# root. If the transcript exceeds TRANSCRIPT_BYTE_CAP, take the trailing slice
+# and drop the first (likely partial) JSONL line so the subprocess only sees
+# whole events.
+transcript_size=$(wc -c <"${TRANSCRIPT_PATH}" 2>/dev/null | tr -d ' ')
 (
   cd "${PROJECT_DIR}" || exit 1
-  cat "${TRANSCRIPT_PATH}" | claude -p --model haiku "${PROMPT}" 2>>"${LOG}"
+  if [ -n "${transcript_size}" ] && [ "${transcript_size}" -gt "${TRANSCRIPT_BYTE_CAP}" ]; then
+    log "tailing transcript: ${transcript_size} bytes -> last ${TRANSCRIPT_BYTE_CAP} bytes"
+    tail -c "${TRANSCRIPT_BYTE_CAP}" "${TRANSCRIPT_PATH}" | tail -n +2 | claude -p --model haiku "${PROMPT}" 2>>"${LOG}"
+  else
+    cat "${TRANSCRIPT_PATH}" | claude -p --model haiku "${PROMPT}" 2>>"${LOG}"
+  fi
 ) >>"${LOG}"
 status=$?
 
