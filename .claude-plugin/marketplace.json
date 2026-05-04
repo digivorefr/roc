@@ -28,7 +28,7 @@
     {
       "name": "my-hand",
       "source": "./plugins/my-hand",
-      "description": "my-hand — capture pages from a reMarkable 2 tablet into Claude Code as multimodal images (macOS, USB)",
+      "description": "my-hand — personal-expression toolkit for Claude Code: reMarkable page capture and Gmail inbox watcher with voice-grounded reply drafts (macOS-arm64)",
       "author": {
         "name": "Pierre Bonnin",
         "email": "hello@digivore.fr"
@@ -40,7 +40,11 @@
         "claude-code",
         "remarkable",
         "multimodal",
-        "macos"
+        "macos",
+        "gmail",
+        "inbox",
+        "drafts",
+        "voice-profile"
       ]
     }
   ]
