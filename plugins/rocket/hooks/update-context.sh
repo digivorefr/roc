@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Stop-hook wrapper for rocket:context-update.
-# Spawns a Haiku-tier `claude -p` subprocess that updates .claude/lexicon.md
-# from the current session transcript. Runs async, never blocks the user.
+# Spawns a `claude -p --model "sonnet[1m]"` subprocess that updates
+# .claude/lexicon.md from the current session transcript. Runs async, never
+# blocks the user.
 
 set -u
 
@@ -20,11 +21,12 @@ DEBOUNCE_SECONDS=30
 STALE_LOCK_SECONDS=600
 LOG_MAX_BYTES=$((1024 * 1024))
 LOG_KEEP=3
-# Transcripts can grow to tens of MB (full session JSONL). Haiku's context is
-# ~200K tokens (~750 KB). Cap the slice fed on stdin to keep room for the
-# prompt, the lexicon, the skill body, and the model's output. The skill is
-# expected to extract incremental concepts from the most recent activity.
-TRANSCRIPT_BYTE_CAP=$((400 * 1024))
+# Transcripts can grow to tens of MB (full session JSONL). We invoke Sonnet
+# with the 1M-context tier (`sonnet[1m]`, ~3.7 MB). Cap the slice fed on
+# stdin to ~800 KB so the prompt stays small enough to keep latency and cost
+# reasonable while almost never tripping the limit. The skill extracts
+# incremental concepts from the most recent activity.
+TRANSCRIPT_BYTE_CAP=$((800 * 1024))
 
 # Read hook payload from stdin (Claude Code passes a JSON object on stdin).
 PAYLOAD="$(cat || true)"
@@ -111,9 +113,9 @@ transcript_size=$(wc -c <"${TRANSCRIPT_PATH}" 2>/dev/null | tr -d ' ')
   cd "${PROJECT_DIR}" || exit 1
   if [ -n "${transcript_size}" ] && [ "${transcript_size}" -gt "${TRANSCRIPT_BYTE_CAP}" ]; then
     log "tailing transcript: ${transcript_size} bytes -> last ${TRANSCRIPT_BYTE_CAP} bytes"
-    tail -c "${TRANSCRIPT_BYTE_CAP}" "${TRANSCRIPT_PATH}" | tail -n +2 | claude -p --model haiku "${PROMPT}" 2>>"${LOG}"
+    tail -c "${TRANSCRIPT_BYTE_CAP}" "${TRANSCRIPT_PATH}" | tail -n +2 | claude -p --model "sonnet[1m]" "${PROMPT}" 2>>"${LOG}"
   else
-    cat "${TRANSCRIPT_PATH}" | claude -p --model haiku "${PROMPT}" 2>>"${LOG}"
+    cat "${TRANSCRIPT_PATH}" | claude -p --model "sonnet[1m]" "${PROMPT}" 2>>"${LOG}"
   fi
 ) >>"${LOG}"
 status=$?

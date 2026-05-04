@@ -85,7 +85,7 @@ Updates the project's semantic lexicon at `.claude/lexicon.md` from the current 
 
 - `/rocket:context-update`
 
-Auto-triggered by Claude when a major semantic shift just happened in the conversation. Also auto-runs in the background after every assistant turn via a `Stop` hook (asynchronous, non-blocking, Haiku-tier subprocess). The hook is debounced 30 s and logs to `.claude/lexicon-update.log` (rotated at 1 MB, last 3 kept). Bootstrap the lexicon and the `## Project semantic context` reference in `CLAUDE.md` by running [`/rocket:setup`](#rocketsetup).
+Auto-triggered by Claude when a major semantic shift just happened in the conversation. Also auto-runs in the background after every assistant turn via a `Stop` hook (asynchronous, non-blocking, `claude -p --model "sonnet[1m]"` subprocess). The hook is debounced 30 s, tails the transcript to ~800 KB before piping it to the subprocess, and logs to `.claude/lexicon-update.log` (rotated at 1 MB, last 3 kept). Bootstrap the lexicon and the `## Project semantic context` reference in `CLAUDE.md` by running [`/rocket:setup`](#rocketsetup).
 
 The lexicon is a flat catalog of `## <Area>` sections (e.g. Domain, Architecture, Roles, Conventions, Decisions) containing `### <Concept>` entries. Each entry has exactly four bullets — `Definition`, `Aliases`, `Relations`, `Source` — and stays compact (cap: 300 lines or 12 KB, whichever smaller). Manual edits are preserved when consistent; contradictions are flagged with a `<!-- TODO -->` comment for human review.
 
