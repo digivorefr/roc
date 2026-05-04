@@ -3,6 +3,19 @@ name: inbox-watch-tick
 description: Run a single Gmail inbox poll for the my-hand mail-session loop and emit a markdown summary table when new threads are found. Use this skill whenever the user invokes "/my-hand:inbox-watch tick", asks to "tick the inbox watcher", "force a poll now", "fais un tick", "force un poll", "regarde maintenant si j'ai du mail", or any similar request. Auto-invoke when the `loop` skill fires the registered `/my-hand:inbox-watch tick` command on its 10-minute schedule.
 context: fork
 agent: general-purpose
+allowed-tools:
+  - Bash(mkdir:*)
+  - Bash(rmdir:*)
+  - Bash(rm:*)
+  - Bash(stat:*)
+  - Bash(date:*)
+  - Bash(trap:*)
+  - Bash(osascript:*)
+  - mcp__*__search_threads
+  - mcp__*__get_thread
+  - Read(~/.claude/state/my-hand/**)
+  - Write(~/.claude/state/my-hand/**)
+  - Edit(~/.claude/state/my-hand/**)
 ---
 
 # Mode
@@ -17,7 +30,7 @@ This skill is intentionally narrow:
 
 ## Permissions note
 
-Forked sub-agents inherit `allowed-tools` from the parent slash command. The `/my-hand:inbox-watch` command pre-approves `mcp__*__search_threads`, `mcp__*__get_thread`, `Bash(mkdir:*)`, `Bash(rm:*)`, `Bash(osascript:*)`, `Read`, `Write`, `Edit`. If the harness in use does not propagate those, the user is prompted on the first tick of a new session and the loop continues normally on subsequent ticks. Do not redeclare `allowed-tools` here — leave the parent slash command as the single source of truth.
+Empirical finding (Claude Desktop, May 2026): forked sub-agents do **not** inherit `allowed-tools` from the parent slash command. Each tick was prompting the user for `Edit` on `inbox-state.json`, for the `trap` Bash command, and so on, breaking the silent-background contract of the loop. The skill therefore redeclares its own `allowed-tools` in the frontmatter above. Keep that list as the single source of truth for what this skill needs at runtime; the parent slash command can keep its own broader list, but it is not what the harness consults inside the fork.
 
 # Output contract
 
