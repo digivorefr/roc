@@ -8,7 +8,7 @@ A Claude Code **marketplace** named `roc` (displayed as **Roc**). It currently d
 
 `rocket` ships a curated set of skills and agents for assisted development; every skill and agent here is meant to be **stack-agnostic** and reused across multiple codebases.
 
-`my-hand` ships a single slash command (`/my-hand:remarkable-grab`) plus a compiled binary that captures pages from a reMarkable 2 tablet over USB. It is the first sanctioned exception to the stack-agnostic rule (see Hard rule 4).
+`my-hand` ships four slash commands (`/my-hand:remarkable-grab`, `/my-hand:tone-profile`, `/my-hand:inbox-watch`, `/my-hand:inbox-reply`), one forked skill (`inbox-watch-tick`), one `SessionStart` hook, and a compiled binary for the reMarkable capture pipeline. It is the first sanctioned exception to the stack-agnostic rule (see Hard rule 4) on two grounds: it depends on local hardware (reMarkable tablet over USB) **and** on a per-user Gmail MCP server.
 
 Each consumer project declares its own stack-specific conventions (test command, typing rules, error-handling style) in its own `CLAUDE.md`. The conventions block is generated interactively by the [`/rocket:setup`](plugins/rocket/skills/setup/SKILL.md) skill — its template is the source of truth. The plugins read those rules instead of carrying their own.
 
@@ -30,7 +30,7 @@ README.md                           Public documentation (install, list of plugi
 CLAUDE.md                           This file — maintainer guide
 ```
 
-A plugin uses whichever of `agents/`, `skills/`, `commands/`, `hooks/`, `bin/`, `build/` it needs — none are mandatory. `rocket` uses `agents/`, `skills/`, `hooks/`. `my-hand` uses `commands/`, `bin/darwin-arm64/`, `build/`.
+A plugin uses whichever of `agents/`, `skills/`, `commands/`, `hooks/`, `bin/`, `build/` it needs — none are mandatory. `rocket` uses `agents/`, `skills/`, `hooks/`. `my-hand` uses `commands/`, `skills/`, `hooks/`, `bin/darwin-arm64/`, `build/`.
 
 Currently there are two plugins: `plugins/rocket/` and `plugins/my-hand/`. Add a sibling directory under `plugins/` to ship a new plugin and register it in `marketplace.json#plugins`.
 
@@ -66,7 +66,7 @@ If a skill or agent needs project-specific behavior, instruct it to read the con
 
 ### 2. Skills and agents must be portable
 
-A skill or agent that only works in one stack does not belong in this marketplace. If you need stack-specific behavior, build it as a project-level skill in the consumer's `.claude/skills/` directory instead.
+A skill or agent that only works in one stack does not belong in this marketplace. If you need stack-specific behavior, build it as a project-level skill in the consumer's `.claude/skills/` directory instead (this is Claude Code's documented location for user-authored static skill markdown — not for plugin runtime state, which goes under `.roc/<plugin>/` per the "State location convention" section below).
 
 ### 3. English everywhere
 
@@ -74,7 +74,7 @@ All identifiers, frontmatter, comments, and prose are in English. Skill descript
 
 ### 4. Exceptions to stack-agnosticism
 
-A plugin may depend on local hardware or a specific OS if (a) it serves a narrow audience of operators who already own that hardware, (b) it has no equivalent that fits within the consumer's `CLAUDE.md` model, and (c) the plugin's `README.md` explicitly states the hardware/OS prerequisite. `my-hand` is the first such plugin: it requires a reMarkable 2 tablet plugged in over USB and is tested only on macOS.
+A plugin may depend on local hardware, a specific OS, or a per-user external account (e.g. a personal MCP server bound to a single identity) if (a) it serves a narrow audience of operators who already meet those prerequisites, (b) it has no equivalent that fits within the consumer's `CLAUDE.md` model, and (c) the plugin's `README.md` explicitly states the hardware/OS/account prerequisite. `my-hand` is the first such plugin: it requires a reMarkable 2 tablet plugged in over USB **and** a per-user Gmail MCP server, and is tested only on macOS-arm64. Hardware non-portability and per-user-identity dependencies both qualify under this exception.
 
 ## Authoring a new skill
 

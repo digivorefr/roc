@@ -9,7 +9,7 @@
     {
       "name": "rocket",
       "source": "./plugins/rocket",
-      "description": "Rocket 🚀 — skills (commit-writer, pr-writer, review, setup, myself, no-code) and agents (spec-writer, spec-maker) for senior-developer-assisted workflows",
+      "description": "Rocket 🚀 — skills (commit-writer, pr-writer, review, setup, myself, no-code, context-update, context-clear) and agents (spec-writer, spec-maker) for senior-developer-assisted workflows",
       "author": {
         "name": "Pierre Bonnin",
         "email": "hello@digivore.fr"
