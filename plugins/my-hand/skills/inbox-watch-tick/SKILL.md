@@ -9,13 +9,12 @@ allowed-tools:
   - Bash(rm:*)
   - Bash(stat:*)
   - Bash(date:*)
-  - Bash(trap:*)
   - Bash(osascript:*)
   - mcp__*__search_threads
   - mcp__*__get_thread
-  - Read(~/.claude/state/my-hand/**)
-  - Write(~/.claude/state/my-hand/**)
-  - Edit(~/.claude/state/my-hand/**)
+  - Read(~/.roc/my-hand/**)
+  - Write(~/.roc/my-hand/**)
+  - Edit(~/.roc/my-hand/**)
 ---
 
 # Mode
@@ -65,38 +64,45 @@ Run /my-hand:inbox-reply <sender or subject> to draft a reply in the thread.
 
 Each step below is a directive. Execute them in order.
 
+## Bash discipline (read this once, apply at every Bash call below)
+
+Issue every Bash command **as a single atomic invocation**. Do not chain commands with `&&`, `||`, or `;`. Do not pipe. Do not redirect into shell substitution (`$(...)`) inside the same call. Each Bash call must be one program with its arguments. The harness's permission matcher inspects the literal command string, and chained or composite forms do not match the prefix patterns declared in this skill's `allowed-tools` block. If you need two operations, run two separate Bash calls.
+
+Also: this skill does **not** use a shell `trap` to release the lock. The harness flags `trap` as evaluating arbitrary shell code and refuses to permanently approve it. Instead, the workflow below releases the lock by an explicit `rmdir` at every exit point (success, empty-poll, error). Treat that explicit release as mandatory — every return path must run `rmdir ~/.roc/my-hand/mail-poll.lock.d/` before returning, except the lock-not-acquired path (where there is nothing to release).
+
 ## Step 1 — Acquire the lock
 
-Run:
+Run, as two separate Bash calls (do not chain):
 
-```bash
-mkdir -p ~/.claude/state/my-hand/
-mkdir ~/.claude/state/my-hand/mail-poll.lock.d/
-```
+1. `mkdir -p ~/.roc/my-hand/`
+2. `mkdir ~/.roc/my-hand/mail-poll.lock.d/`
 
-If the second `mkdir` fails (lock already held), check the lock's mtime via `stat -f %m ~/.claude/state/my-hand/mail-poll.lock.d/`. If `(now - mtime) >= 600` seconds, the lock is stale: `rmdir ~/.claude/state/my-hand/mail-poll.lock.d/` and retry the `mkdir`. If still held after the retry, return the empty string and exit immediately. Do not loop.
+If the second `mkdir` returns non-zero (lock already held), perform a stale-lock check:
 
-## Step 2 — Set the trap
+1. `stat -f %m ~/.roc/my-hand/mail-poll.lock.d/` — capture the mtime.
+2. `date +%s` — current epoch seconds.
+3. Compute `now - mtime` mentally.
 
-Run this verbatim so the lock is released even if the skill crashes or is interrupted:
+If the lock's age `>= 600` seconds, reap it:
 
-```bash
-trap 'rmdir ~/.claude/state/my-hand/mail-poll.lock.d/ 2>/dev/null' EXIT INT TERM HUP
-```
+1. `rmdir ~/.roc/my-hand/mail-poll.lock.d/`
+2. `mkdir ~/.roc/my-hand/mail-poll.lock.d/`
 
-## Step 3 — Read state
+If the second `mkdir` still fails after that retry, return the empty string and exit immediately. There is no lock to release in this branch — you never acquired it. Do not loop further.
 
-`Read` `~/.claude/state/my-hand/inbox-state.json`. On absence or JSON parse failure, treat the state as fresh:
+## Step 2 — Read state
+
+`Read` `~/.roc/my-hand/inbox-state.json`. On absence or JSON parse failure, treat the state as fresh:
 
 ```json
 { "last_seen_thread_ids": [], "last_poll_at": null, "pending_replies": {} }
 ```
 
-## Step 4 — Read the tone profile
+## Step 3 — Read the tone profile
 
-`Read` `~/.claude/state/my-hand/tone.md`. If it is missing or smaller than 100 bytes, set an internal flag `tone_missing = true`. The table will still render in the non-empty case; only the `Suggested reply` cells will be replaced by `(profile missing — run /my-hand:tone-profile)`.
+`Read` `~/.roc/my-hand/tone.md`. If it is missing or smaller than 100 bytes, set an internal flag `tone_missing = true`. The table will still render in the non-empty case; only the `Suggested reply` cells will be replaced by `(profile missing — run /my-hand:tone-profile)`.
 
-## Step 5 — Query Gmail
+## Step 4 — Query Gmail
 
 Use the Gmail MCP `search_threads` tool. Construct the query as follows:
 
@@ -105,20 +111,20 @@ Use the Gmail MCP `search_threads` tool. Construct the query as follows:
 
 Cap the result set at 50 in either case. Do not request more.
 
-## Step 6 — Filter
+## Step 5 — Filter
 
 Drop any thread whose ID appears in `last_seen_thread_ids`.
 
-## Step 7 — Empty case
+## Step 6 — Empty case
 
 If the filtered set is empty:
 
 1. Update `last_poll_at` in the in-memory state to the current ISO-8601 UTC timestamp (e.g. `2026-05-04T10:30:00Z`).
-2. Persist the state to disk. If only `last_poll_at` changed, use `Edit` for a minimal patch; otherwise use `Write` for a full rewrite. Both are acceptable.
-3. Release the lock: `rmdir ~/.claude/state/my-hand/mail-poll.lock.d/`.
+2. Persist the state to disk via `Write` (full rewrite). `Edit` is also acceptable for a minimal patch when only `last_poll_at` changed.
+3. Release the lock: run `rmdir ~/.roc/my-hand/mail-poll.lock.d/` as a single Bash call.
 4. Return the empty string. Stop.
 
-## Step 8 — Non-empty case
+## Step 7 — Non-empty case
 
 For each new thread:
 
@@ -129,11 +135,11 @@ For each new thread:
 5. Decide whether the user owes a reply. Heuristics: direct address to the user, an explicit question, an action item directed at the user, an awaited confirmation. Newsletters, promotions, automated notifications, and bulk mailings are `—` by default.
 6. If `Reply?` is `✅` and `tone_missing` is false, generate a 2-4 sentence reply suggestion grounded in `tone.md`, in the language of the source message. If `tone_missing` is true, the suggestion is `(profile missing — run /my-hand:tone-profile)`.
 
-## Step 9 — Build the markdown table
+## Step 8 — Build the markdown table
 
 Render the table per the Output contract above. Strip `|` and newlines from cell content as specified. Emit the header row exactly as shown.
 
-## Step 10 — Build the footer
+## Step 9 — Build the footer
 
 Append a blank line, then exactly:
 
@@ -141,7 +147,7 @@ Append a blank line, then exactly:
 Run /my-hand:inbox-reply <sender or subject> to draft a reply in the thread.
 ```
 
-## Step 11 — Update state
+## Step 10 — Update state
 
 In-memory:
 
@@ -164,9 +170,9 @@ In-memory:
 
 Persist via `Write` (full rewrite is fine for V1; the lock serializes writers and the file stays well under the size that would benefit from atomic tmp+rename). Document this trade-off: V1 accepts a non-atomic write because writes happen at most every 10 minutes and the lock prevents concurrent writers. If real usage shows corruption, V2 reintroduces a Python helper for state I/O.
 
-## Step 12 — macOS notification
+## Step 11 — macOS notification
 
-Build a senders list of up to 3 names (use the display name extracted at step 8.2). If the new-thread count `N` exceeds 3, append `+M more` where `M = N - 3`.
+Build a senders list of up to 3 names (use the display name extracted at step 7.2). If the new-thread count `N` exceeds 3, append `+M more` where `M = N - 3`.
 
 Escape any embedded double quotes in sender names: `"` becomes `\"`. Then run:
 
@@ -176,24 +182,24 @@ osascript -e 'display notification "From: <senders>" with title "Claude — N no
 
 Substitute the real `N` (count of new threads, regardless of `Reply?` status) and the real `<senders>` string. The title is intentionally French — single recognized banner string. Do not translate.
 
-## Step 13 — Release the lock
+## Step 12 — Release the lock
 
-Run `rmdir ~/.claude/state/my-hand/mail-poll.lock.d/`. The trap from step 2 catches crash paths; this is the happy-path release.
+Run `rmdir ~/.roc/my-hand/mail-poll.lock.d/` as a single Bash call. This is the happy-path release. Step 6 (empty-poll path) and the Gmail-error edge case both also release the lock explicitly — this is mandatory because there is no shell trap.
 
-## Step 14 — Return the result
+## Step 13 — Return the result
 
-Return the markdown table from step 9, a blank line, and the footer from step 10, as a single string. This is what the parent conversation sees. Do not prepend or append anything.
+Return the markdown table from step 8, a blank line, and the footer from step 9, as a single string. This is what the parent conversation sees. Do not prepend or append anything.
 
 # Edge cases
 
-- **`~/.claude/state/my-hand/` directory missing**: step 1 creates it via `mkdir -p`.
-- **`inbox-state.json` malformed**: step 3 treats it as fresh (empty arrays / objects).
-- **Lock held and not stale**: step 1 returns the empty string. Do not retry, do not loop.
-- **Gmail MCP returns 0 threads or 0 after filtering**: step 7 empty path. No notification.
+- **`~/.roc/my-hand/` directory missing**: step 1 creates it via `mkdir -p`.
+- **`inbox-state.json` malformed**: step 2 treats it as fresh (empty arrays / objects).
+- **Lock held and not stale**: step 1 returns the empty string after the stale-reap retry. Do not retry beyond that, do not loop.
+- **Gmail MCP returns 0 threads or 0 after filtering**: step 6 empty path. No notification.
 - **Stale `pending_replies` entry** (thread deleted in Gmail): leave it in place. The 200-entry cap will eventually evict it. Do not preemptively garbage-collect.
 - **Cell content contains `|`**: escape as `\|`. Cell content with newlines: replace each newline with `; `.
 - **Sender name contains `"`**: escape to `\"` before passing into the `osascript` body string.
-- **Gmail MCP raises an error** (auth failure, network, server error): release the lock via `rmdir ~/.claude/state/my-hand/mail-poll.lock.d/`, return `inbox-watch-tick: <short reason>`, skip the notification, do not write state.
+- **Gmail MCP raises an error** (auth failure, network, server error): release the lock via a single Bash call `rmdir ~/.roc/my-hand/mail-poll.lock.d/`, return `inbox-watch-tick: <short reason>`, skip the notification, do not write state.
 - **Tone profile contains characters that would break the table**: escape pipes and strip newlines in the `Suggested reply` cell content, same rule as user-data cells.
 
 # What NOT to do

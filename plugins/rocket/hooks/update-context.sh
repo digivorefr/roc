@@ -1,8 +1,19 @@
 #!/usr/bin/env bash
 # Stop-hook wrapper for rocket:context-update.
-# Spawns a `claude -p --model "sonnet[1m]"` subprocess that updates
-# .claude/lexicon.md from the current session transcript. Runs async, never
-# blocks the user.
+# Spawns a `claude -p --model "sonnet[1m]"` subprocess that updates the
+# project lexicon at `<project>/.roc/rocket/lexicon.md` from the current
+# session transcript. Runs async, never blocks the user.
+#
+# State layout (project-local):
+#   .roc/rocket/lexicon.md             — the lexicon itself (committed)
+#   .roc/rocket/lexicon-update.log     — wrapper log (gitignore)
+#   .roc/rocket/lexicon.md.lock.d/     — atomic lock (gitignore)
+#
+# Path migration note: previous versions stored these under .claude/, but
+# Claude Code's harness flags any .claude/ path as sensitive and refuses to
+# permanently approve writes to it from sub-agents. The skill is unable to
+# write back, the hook is silently broken. The migration to .roc/<plugin>/
+# escapes the sensitive zone.
 
 set -u
 
@@ -13,28 +24,33 @@ set -u
 export ROCKET_CONTEXT_UPDATE_INVOKED=1
 
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$PWD}"
-CLAUDE_DIR="${PROJECT_DIR}/.claude"
-LEXICON="${CLAUDE_DIR}/lexicon.md"
-LOCK_DIR="${CLAUDE_DIR}/lexicon.md.lock.d"
-LOG="${CLAUDE_DIR}/lexicon-update.log"
+ROC_DIR="${PROJECT_DIR}/.roc/rocket"
+LEXICON="${ROC_DIR}/lexicon.md"
+LOCK_DIR="${ROC_DIR}/lexicon.md.lock.d"
+LOG="${ROC_DIR}/lexicon-update.log"
 DEBOUNCE_SECONDS=30
 STALE_LOCK_SECONDS=600
 LOG_MAX_BYTES=$((1024 * 1024))
 LOG_KEEP=3
-# Transcripts can grow to tens of MB (full session JSONL). We invoke Sonnet
-# with the 1M-context tier (`sonnet[1m]`, ~3.7 MB). Cap the slice fed on
-# stdin to ~800 KB so the prompt stays small enough to keep latency and cost
-# reasonable while almost never tripping the limit. The skill extracts
-# incremental concepts from the most recent activity.
-TRANSCRIPT_BYTE_CAP=$((800 * 1024))
+# Slice the trailing N lines of the transcript and pipe them through the
+# strip preprocessor (siblings update-context-strip.py). The strip removes
+# `signature`, `thinking`, `originalFile`, and image base64 payloads — these
+# fields dominate the token count without carrying semantic signal — and
+# stubs any line that remains over the per-line cap. With both a line cap
+# and a per-line size cap, the worst case is bounded at ~4 MB which fits in
+# sonnet[1m]'s 1M-token (~3.7 MB) context window.
+TRANSCRIPT_TAIL_LINES=500
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+STRIP_SCRIPT="${SCRIPT_DIR}/update-context-strip.py"
 
 # Read hook payload from stdin (Claude Code passes a JSON object on stdin).
 PAYLOAD="$(cat || true)"
 
-# Skip silently if the claude CLI is unavailable.
+# Skip silently if the claude CLI or python3 is unavailable.
 command -v claude >/dev/null 2>&1 || exit 0
+command -v python3 >/dev/null 2>&1 || exit 0
 
-mkdir -p "${CLAUDE_DIR}" || exit 0
+mkdir -p "${ROC_DIR}" || exit 0
 
 # Rotate log if it exceeds the size cap.
 if [ -f "${LOG}" ]; then
@@ -61,17 +77,16 @@ if [ -f "${LEXICON}" ]; then
   fi
 fi
 
-# Extract transcript_path from the JSON payload without requiring jq. The sed
-# regex assumes the value contains no escaped quotes (transcript paths in
-# practice never do). If a python3 interpreter is available, prefer it as a
-# robust fallback; otherwise stick with sed.
-TRANSCRIPT_PATH="$(printf '%s' "${PAYLOAD}" | sed -n 's/.*"transcript_path"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n1)"
-if [ -z "${TRANSCRIPT_PATH}" ] && command -v python3 >/dev/null 2>&1; then
-  TRANSCRIPT_PATH="$(printf '%s' "${PAYLOAD}" | python3 -c 'import json,sys
+# Extract transcript_path from the JSON payload via python3 (already required
+# above for the strip pipeline). Fall back to sed if python parsing fails for
+# any reason.
+TRANSCRIPT_PATH="$(printf '%s' "${PAYLOAD}" | python3 -c 'import json,sys
 try:
     print(json.load(sys.stdin).get("transcript_path",""))
 except Exception:
     pass' 2>/dev/null)"
+if [ -z "${TRANSCRIPT_PATH}" ]; then
+  TRANSCRIPT_PATH="$(printf '%s' "${PAYLOAD}" | sed -n 's/.*"transcript_path"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n1)"
 fi
 
 if [ -z "${TRANSCRIPT_PATH}" ] || [ ! -r "${TRANSCRIPT_PATH}" ]; then
@@ -101,22 +116,18 @@ trap 'rmdir "${LOCK_DIR}" 2>/dev/null' EXIT INT TERM HUP
 
 PROMPT='/rocket:context-update
 
-The transcript of the current Claude Code session is provided on stdin (JSONL, one event per line). Run the context-update workflow against it and the project lexicon.'
+The transcript of the current Claude Code session is provided on stdin (JSONL, one event per line). Each event has been preprocessed: `signature`, `thinking`, `originalFile`, and image base64 payloads are stripped or stubbed. Lines that exceeded the size cap are replaced by a small JSON stub. Run the context-update workflow against the remaining content and the project lexicon at `.roc/rocket/lexicon.md`.'
 
-# Pipe the (possibly truncated) transcript on stdin to the subprocess. cd into
-# the project so the skill resolves .claude/lexicon.md relative to the right
-# root. If the transcript exceeds TRANSCRIPT_BYTE_CAP, take the trailing slice
-# and drop the first (likely partial) JSONL line so the subprocess only sees
-# whole events.
-transcript_size=$(wc -c <"${TRANSCRIPT_PATH}" 2>/dev/null | tr -d ' ')
+# Tail to TRANSCRIPT_TAIL_LINES, run through the strip preprocessor, pipe to
+# the subprocess. cd into the project so the skill resolves
+# .roc/rocket/lexicon.md relative to the right root.
+transcript_total_lines=$(wc -l <"${TRANSCRIPT_PATH}" 2>/dev/null | tr -d ' ')
+log "tailing transcript: ${transcript_total_lines} lines -> last ${TRANSCRIPT_TAIL_LINES} lines (with strip)"
 (
   cd "${PROJECT_DIR}" || exit 1
-  if [ -n "${transcript_size}" ] && [ "${transcript_size}" -gt "${TRANSCRIPT_BYTE_CAP}" ]; then
-    log "tailing transcript: ${transcript_size} bytes -> last ${TRANSCRIPT_BYTE_CAP} bytes"
-    tail -c "${TRANSCRIPT_BYTE_CAP}" "${TRANSCRIPT_PATH}" | tail -n +2 | claude -p --model "sonnet[1m]" "${PROMPT}" 2>>"${LOG}"
-  else
-    cat "${TRANSCRIPT_PATH}" | claude -p --model "sonnet[1m]" "${PROMPT}" 2>>"${LOG}"
-  fi
+  tail -n "${TRANSCRIPT_TAIL_LINES}" "${TRANSCRIPT_PATH}" \
+    | python3 "${STRIP_SCRIPT}" \
+    | claude -p --model "sonnet[1m]" "${PROMPT}" 2>>"${LOG}"
 ) >>"${LOG}"
 status=$?
 

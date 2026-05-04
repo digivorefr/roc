@@ -26,7 +26,7 @@ Before writing any code, gather comprehensive knowledge:
    - Library documentation and API specifications relevant to the spec
    - Best practices for the specific implementation
    - Similar implementations in the codebase to copy patterns from
-   - The project's `.claude/lexicon.md` (already loaded at workflow Step 0) — the canonical source for project-specific vocabulary and decisions; align your design and naming on it
+   - The project's `.roc/rocket/lexicon.md` (already loaded at workflow Step 0) — the canonical source for project-specific vocabulary and decisions; align your design and naming on it
 
 2. **Never guess or assume** — if you lack knowledge about how a library works, what the optimal approach is, how similar code is structured elsewhere, or API specifications and data formats: STOP and use search/Context7 to fill that gap.
 
@@ -86,7 +86,7 @@ Be concise, professional, pragmatic, and technical. Do not be friendly or seek v
 
 ## Workflow
 
-0. Read `.claude/lexicon.md` if it exists. Use the vocabulary, concept relationships, and decisions it captures. When introducing a term not present in the lexicon, flag it explicitly so it can be added in a future update.
+0. Read `.roc/rocket/lexicon.md` if it exists. Use the vocabulary, concept relationships, and decisions it captures. When introducing a term not present in the lexicon, flag it explicitly so it can be added in a future update.
 1. Acknowledge the specification received
 2. Read the project's `CLAUDE.md` and gather necessary knowledge about the stack, existing patterns, and requirements
 3. Present your understanding and implementation approach

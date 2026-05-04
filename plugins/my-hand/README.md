@@ -8,7 +8,7 @@ A Claude Code plugin that hosts personal-expression features tied to the user's 
 Slash commands shipped:
 
 - `/my-hand:remarkable-grab [notebook-name]` — capture a notebook page.
-- `/my-hand:tone-profile` — distill the user's email voice into `~/.claude/state/my-hand/tone.md`.
+- `/my-hand:tone-profile` — distill the user's email voice into `~/.roc/my-hand/tone.md`.
 - `/my-hand:inbox-watch start | stop | tick` — manage a Gmail mail-session loop.
 - `/my-hand:inbox-reply <sender or subject keyword>` — finalize a Gmail draft inside the existing thread.
 
@@ -84,7 +84,7 @@ Run once, then refresh every ~30 days as your style drifts:
 /my-hand:tone-profile
 ```
 
-The model queries the last 30 days of sent Gmail (capped at 50 messages), extracts user-composed text only, distills 5-10 saliency bullets and three representative example messages, and writes the file to `~/.claude/state/my-hand/tone.md` (capped at 5 KB).
+The model queries the last 30 days of sent Gmail (capped at 50 messages), extracts user-composed text only, distills 5-10 saliency bullets and three representative example messages, and writes the file to `~/.roc/my-hand/tone.md` (capped at 5 KB).
 
 #### Mail-session loop
 
@@ -102,7 +102,7 @@ When you reopen Claude Code in the same project, polling auto-resumes via a `Ses
 /my-hand:inbox-watch stop
 ```
 
-Disables auto-resume by removing `~/.claude/state/my-hand/mail-session.path`. **Note:** in V1, `stop` only removes the sentinel; it does not stop the currently running loop. To stop polling immediately, end the conversation.
+Disables auto-resume by removing `~/.roc/my-hand/mail-session.path`. **Note:** in V1, `stop` only removes the sentinel; it does not stop the currently running loop. To stop polling immediately, end the conversation.
 
 ```text
 /my-hand:inbox-watch tick
@@ -132,11 +132,11 @@ The model looks up the keyword against the most recent tick's `pending_replies`,
 ### Gmail
 
 - **Polling interval.** 10 minutes via the `loop` skill. Empty ticks are silent.
-- **Auto-resume scope.** Only the project recorded in `~/.claude/state/my-hand/mail-session.path` triggers the SessionStart bootstrap. Every other project is untouched.
+- **Auto-resume scope.** Only the project recorded in `~/.roc/my-hand/mail-session.path` triggers the SessionStart bootstrap. Every other project is untouched.
 - **Voice profile cap.** `tone.md` is capped at 5 KB. The model trims before writing if needed.
 - **Reply suggestions.** 2-4 sentences, language-matched to the source message.
 - **Drafts only.** `/my-hand:inbox-reply` uses `create_draft` exclusively. Sending always happens manually via the Gmail UI.
-- **Concurrency.** Ticks are serialized by an atomic `mkdir`-based lock at `~/.claude/state/my-hand/mail-poll.lock.d/`. A stale lock (mtime > 600 s) is reaped automatically.
+- **Concurrency.** Ticks are serialized by an atomic `mkdir`-based lock at `~/.roc/my-hand/mail-poll.lock.d/`. A stale lock (mtime > 600 s) is reaped automatically.
 - **Notification language.** The macOS banner title is intentionally French (`Claude — N nouveau(x) mail(s)`) for one-glance recognition. The body content is English-clean. This is the single intentional French string in the plugin.
 
 ## Troubleshooting
@@ -150,13 +150,13 @@ The model looks up the keyword against the most recent tick's `pending_replies`,
 | Two notebooks share a name | No path-qualified resolution syntax yet. Rename one of the conflicting notebooks on the tablet, then retry. |
 | "OSError writing /tmp/..." | `/tmp` not writable. Confirm filesystem permissions. |
 | `Voice profile missing` printed by `/my-hand:inbox-watch start` or `/my-hand:inbox-reply` | Run `/my-hand:tone-profile` first. |
-| Tick output empty when new mail expected | Thread already in `last_seen_thread_ids` from a prior tick; check `~/.claude/state/my-hand/inbox-state.json`. |
-| Tick output empty + lock present | Stale lock from a crashed prior run; reaped at 600 s automatically. To force-release, `rmdir ~/.claude/state/my-hand/mail-poll.lock.d/`. |
+| Tick output empty when new mail expected | Thread already in `last_seen_thread_ids` from a prior tick; check `~/.roc/my-hand/inbox-state.json`. |
+| Tick output empty + lock present | Stale lock from a crashed prior run; reaped at 600 s automatically. To force-release, `rmdir ~/.roc/my-hand/mail-poll.lock.d/`. |
 | No macOS notification on non-empty tick | `osascript` unreachable, or the system has banner notifications disabled for Terminal/iTerm. |
-| Watcher not auto-resuming on session start | Confirm `~/.claude/state/my-hand/mail-session.path` matches your `pwd` (resolved via `realpath`). |
+| Watcher not auto-resuming on session start | Confirm `~/.roc/my-hand/mail-session.path` matches your `pwd` (resolved via `realpath`). |
 | `inbox-reply <args>` finds 0 matches | The keyword does not match any sender/company/subject in `pending_replies` from the most recent tick. Use a more specific keyword or wait for the next tick. |
 | `inbox-reply` returns "Draft created" but Gmail UI shows nothing | The Gmail MCP server may have written to a different account. Check the MCP server config. |
-| Polling does not auto-resume even in the configured project | Verify the sentinel exists (`cat ~/.claude/state/my-hand/mail-session.path`). To opt out entirely, run `/my-hand:inbox-watch stop` or delete the sentinel by hand. |
+| Polling does not auto-resume even in the configured project | Verify the sentinel exists (`cat ~/.roc/my-hand/mail-session.path`). To opt out entirely, run `/my-hand:inbox-watch stop` or delete the sentinel by hand. |
 
 ## What is **not** here (deferred)
 

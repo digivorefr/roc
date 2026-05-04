@@ -10,7 +10,7 @@
 
 set -u
 
-STATE_DIR="${HOME}/.claude/state/my-hand"
+STATE_DIR="${HOME}/.roc/my-hand"
 SENTINEL="${STATE_DIR}/mail-session.path"
 
 # Drain hook payload from stdin to be polite, even though we do not need it.

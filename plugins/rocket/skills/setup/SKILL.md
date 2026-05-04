@@ -87,11 +87,11 @@ Internal composition is in English using the [Template](#template) and the [Sema
 2. **Drop sections** — remove `### <section>` blocks that the user did not select at Round 1.4 OR that were marked `Skip ours` at Step 3.
 3. **Apply Loose / Not applicable typing variants** — see [Typing rule variants](#typing-rule-variants).
 4. **Decide on the semantic context block**:
-   - If the existing CLAUDE.md already contains a block with equivalent semantic intent (heading like "Project semantic context", "Contexte sémantique du projet", "Lexicon", or any heading whose body references `.claude/lexicon.md`): drop the semantic context template — it is already there.
+   - If the existing CLAUDE.md already contains a block with equivalent semantic intent (heading like "Project semantic context", "Contexte sémantique du projet", "Lexicon", or any heading whose body references `.roc/rocket/lexicon.md`): drop the semantic context template — it is already there.
    - Otherwise: keep it; it will be inserted right after the conventions block.
 5. **Decide on lexicon file creation**:
-   - If `.claude/lexicon.md` already exists: no action.
-   - Otherwise: schedule its creation (Step 8 will create the `.claude/` directory if missing and write the file).
+   - If `.roc/rocket/lexicon.md` already exists: no action.
+   - Otherwise: schedule its creation (Step 8 will create the `.roc/rocket/` directory if missing and write the file).
 6. **Translate** — if the target language from Step 3 is not English, translate both blocks (conventions + semantic context, when scheduled): prose, headings, bullets. Keep code blocks, file paths, command lines, and proper nouns untranslated. See [Section translation hints](#section-translation-hints) for canonical heading translations.
 7. **Adapt tone** — match the existing CLAUDE.md's voice per [Style adaptation guidelines](#style-adaptation-guidelines). If no existing CLAUDE.md, use a terse imperative voice as default.
 8. **Apply merges** — for any overlapping section marked `Merge content`, write a merged version that keeps the existing content's wording and adds the missing facts from our template, in the existing language and tone.
@@ -101,7 +101,7 @@ Internal composition is in English using the [Template](#template) and the [Sema
 Compute the unified diff of all approved changes:
 
 - **`CLAUDE.md`** — a creation diff if absent, otherwise a unified diff (3 lines of context) showing additions, replacements, and deletions across the file. The diff covers BOTH the conventions block AND the semantic context block insertion when scheduled at Step 6.4.
-- **`.claude/lexicon.md`** — a one-line creation note appended after the diff if scheduled at Step 6.5, e.g. `+ Will create .claude/lexicon.md (auto-maintained header only)`. Skip this line if the file already exists.
+- **`.roc/rocket/lexicon.md`** — a one-line creation note appended after the diff if scheduled at Step 6.5, e.g. `+ Will create .roc/rocket/lexicon.md (auto-maintained header only)`. Skip this line if the file already exists.
 
 Show the diff to the user wrapped in a fenced ```` ```diff ```` block, followed by the lexicon-creation note when applicable, then run **one** `AskUserQuestion` call with a single question:
 
@@ -109,7 +109,7 @@ Show the diff to the user wrapped in a fenced ```` ```diff ```` block, followed 
 
 If `Adjust`: ask the user (free-text via the auto-Other) what to change, regenerate the rendered state per their notes, show the new diff, ask again. Cap at 3 adjustment loops to prevent runaway.
 
-If `Cancel`: exit without writing. Neither `CLAUDE.md` nor `.claude/lexicon.md` is touched.
+If `Cancel`: exit without writing. Neither `CLAUDE.md` nor `.roc/rocket/lexicon.md` is touched.
 
 ### Step 8 — Write
 
@@ -126,8 +126,8 @@ Apply all approved changes in a single pass. Both `CLAUDE.md` insertion and the 
 
 **Lexicon bootstrap** — only when scheduled at Step 6.5:
 
-1. Create the `.claude/` directory if missing.
-2. Write `.claude/lexicon.md` with exactly this single line (no other content):
+1. Create the `.roc/rocket/` directory if missing.
+2. Write `.roc/rocket/lexicon.md` with exactly this single line (no other content):
 
    ```
    <!-- Auto-maintained by rocket:context-update. Edits are preserved when consistent. -->
@@ -145,7 +145,7 @@ Output a short summary, under 12 lines, no emojis:
 - Sections included, sections skipped (with why).
 - Overlap resolutions applied.
 - Detected values that were accepted as-is.
-- Whether `.claude/lexicon.md` was created or already existed, and whether the `## Project semantic context` block was inserted or already present.
+- Whether `.roc/rocket/lexicon.md` was created or already existed, and whether the `## Project semantic context` block was inserted or already present.
 - Any `<TO FILL: ...>` placeholder still in the file that the user should review manually.
 
 ## Style adaptation guidelines
@@ -255,12 +255,12 @@ If it fails, fix the underlying issue. Never bypass it (no `--no-verify`, no rul
 
 ## Semantic context template
 
-Used at Step 6 (compose) and inserted in `CLAUDE.md` at Step 8 when scheduled. Compose internally in English; translate per Step 6.6 if the target language is not English. The link target `.claude/lexicon.md` and the path inside the link text stay untranslated.
+Used at Step 6 (compose) and inserted in `CLAUDE.md` at Step 8 when scheduled. Compose internally in English; translate per Step 6.6 if the target language is not English. The link target `.roc/rocket/lexicon.md` and the path inside the link text stay untranslated.
 
 === SEMANTIC CONTEXT TEMPLATE START ===
 ## Project semantic context
 
-Project-specific concepts, vocabulary, patterns, and decisions are documented in [`.claude/lexicon.md`](.claude/lexicon.md). Agents read this file before generating specs, plans, or implementations and align their vocabulary on it. The file is auto-maintained by `rocket:context-update`; manual edits are preserved when consistent.
+Project-specific concepts, vocabulary, patterns, and decisions are documented in [`.roc/rocket/lexicon.md`](.roc/rocket/lexicon.md). Agents read this file before generating specs, plans, or implementations and align their vocabulary on it. The file is auto-maintained by `rocket:context-update`; manual edits are preserved when consistent.
 === SEMANTIC CONTEXT TEMPLATE END ===
 
 ## Typing rule variants
@@ -277,7 +277,7 @@ If the user picks `Not applicable`, drop the entire `### Typing rules` section.
 1. **Do NOT** run any command from `package.json#scripts` or other manifests during detection. Read files only.
 2. **Do NOT** invent values. If a detection signal is missing, ask the user.
 3. **Do NOT** add a section that the user did not request, or that was marked `Skip ours` at Step 3.
-4. **Do NOT** modify any file other than `CLAUDE.md` and (only as the Step 8 lexicon bootstrap) `.claude/lexicon.md`.
-5. **Do NOT** write to `CLAUDE.md` or `.claude/lexicon.md` before the user has approved the diff at Step 7.
+4. **Do NOT** modify any file other than `CLAUDE.md` and (only as the Step 8 lexicon bootstrap) `.roc/rocket/lexicon.md`.
+5. **Do NOT** write to `CLAUDE.md` or `.roc/rocket/lexicon.md` before the user has approved the diff at Step 7.
 6. The whole flow should complete in 2 to 4 `AskUserQuestion` calls for typical cases. Do not chain unnecessary confirmations.
 7. If `CLAUDE.md` resolution fails midway (file becomes unreadable, parsing breaks), abort with a clear error message rather than partial writes.

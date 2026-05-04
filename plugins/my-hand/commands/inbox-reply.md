@@ -18,8 +18,8 @@ The `allowed-tools` list deliberately excludes any tool capable of sending mail,
 
 ## Workflow
 
-1. `Read` `~/.claude/state/my-hand/tone.md`. If the file does not exist, print exactly `Voice profile missing. Run /my-hand:tone-profile first.` and stop. Do not call any Gmail tool.
-2. `Read` `~/.claude/state/my-hand/inbox-state.json`. Tolerate missing file or malformed JSON — treat either as `{ "pending_replies": {} }`.
+1. `Read` `~/.roc/my-hand/tone.md`. If the file does not exist, print exactly `Voice profile missing. Run /my-hand:tone-profile first.` and stop. Do not call any Gmail tool.
+2. `Read` `~/.roc/my-hand/inbox-state.json`. Tolerate missing file or malformed JSON — treat either as `{ "pending_replies": {} }`.
 3. Build a candidate list from `pending_replies` whose `sender`, `company`, or `subject` field substring-matches `$ARGUMENTS` case-insensitively. Each candidate carries its thread ID (the key in `pending_replies`).
 4. If 0 candidates from `pending_replies`, fall back to a Gmail `search_threads` call with `$ARGUMENTS` as the free-text query, capped at the most recent ~20 results. If still 0, print exactly `No matching thread for "<args>".` and stop.
 5. If more than 1 candidate, list them as a markdown bullet list:

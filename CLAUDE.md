@@ -137,7 +137,7 @@ color: <visual hint>
 - Body opens with a role statement, then sections like `## Core Philosophy`, `## Workflow`, `## What You Must NOT Do`.
 - An agent that implements features (`spec-maker`) must read the consumer's `CLAUDE.md` for stack rules and use the verification command declared there.
 - An agent that produces documents (`spec-writer`) must defer stack rules to the consumer's `CLAUDE.md` rather than restating them.
-- `spec-maker` and `spec-writer` share an identical Step 0 (`Read .claude/lexicon.md if it exists...`). When changing it in one agent, apply the same change to the other to prevent drift.
+- `spec-maker` and `spec-writer` share an identical Step 0 (`Read .roc/rocket/lexicon.md if it exists...`). When changing it in one agent, apply the same change to the other to prevent drift.
 
 ## Authoring a new slash command
 
@@ -178,6 +178,17 @@ allowed-tools:
 - Bump `version` in the relevant `plugin.json` on every behavioral change of that plugin. Without a version bump, distributed installs use commit SHA and every commit counts as an update.
 - `plugin.json#name` is the **namespace prefix** for that plugin. Skills become `/<plugin>:<skill>`. Renaming a plugin breaks every consumer.
 - `marketplace.json#name` is the marketplace identifier used in `/plugin install <plugin>@<marketplace>`. Renaming the marketplace breaks every consumer's `/plugin marketplace add` line.
+
+## State location convention
+
+**Never store plugin state under `.claude/` (project-local) or `~/.claude/` (user-global).** Claude Code's harness treats anything under those prefixes as sensitive and refuses to grant a permanent "always allow" on Bash, Read, Write, or Edit operations targeting them — breaking silent automation (every poll, every save prompts the user).
+
+Use this layout instead:
+
+- **User-global state** → `~/.roc/<plugin-name>/`. Survives across projects and sessions. Examples: `~/.roc/my-hand/tone.md`, `~/.roc/my-hand/inbox-state.json`.
+- **Project-local state** → `<project>/.roc/<plugin-name>/`. Scoped to the working tree, can be committed selectively. Examples: `<project>/.roc/rocket/lexicon.md` (committed), `<project>/.roc/rocket/lexicon-update.log` (gitignored), `<project>/.roc/rocket/lexicon.md.lock.d/` (gitignored).
+
+The `.claude/` directory remains exclusively for Claude Code's own state (plugin manifest cache, settings.local.json) and the user's personal overrides (`CLAUDE.local.md`, `settings.local.json`). Plugins never write there.
 
 ## Validating changes locally
 

@@ -81,13 +81,22 @@ Manual-only — never auto-triggered.
 
 #### `/rocket:context-update`
 
-Updates the project's semantic lexicon at `.claude/lexicon.md` from the current conversation. The lexicon is a compact catalog of project-specific concepts, vocabulary, patterns, and decisions, read by `rocket:spec-writer` and `rocket:spec-maker` to align their vocabulary with yours.
+Updates the project's semantic lexicon at `.roc/rocket/lexicon.md` from the current conversation. The lexicon is a compact catalog of project-specific concepts, vocabulary, patterns, and decisions, read by `rocket:spec-writer` and `rocket:spec-maker` to align their vocabulary with yours.
 
 - `/rocket:context-update`
 
-Auto-triggered by Claude when a major semantic shift just happened in the conversation. Also auto-runs in the background after every assistant turn via a `Stop` hook (asynchronous, non-blocking, `claude -p --model "sonnet[1m]"` subprocess). The hook is debounced 30 s, tails the transcript to ~800 KB before piping it to the subprocess, and logs to `.claude/lexicon-update.log` (rotated at 1 MB, last 3 kept). Bootstrap the lexicon and the `## Project semantic context` reference in `CLAUDE.md` by running [`/rocket:setup`](#rocketsetup).
+Auto-triggered by Claude when a major semantic shift just happened in the conversation. Also auto-runs in the background after every assistant turn via a `Stop` hook (asynchronous, non-blocking, `claude -p --model "sonnet[1m]"` subprocess). The hook is debounced 30 s, tails the transcript to its last 500 lines, runs them through a stripper that removes token-heavy fields (`signature`, `thinking`, `originalFile`, image base64) and caps each line at 8 KB, then pipes the result to the subprocess. Logs land in `.roc/rocket/lexicon-update.log` (rotated at 1 MB, last 3 kept). Bootstrap the lexicon and the `## Project semantic context` reference in `CLAUDE.md` by running [`/rocket:setup`](#rocketsetup).
 
 The lexicon is a flat catalog of `## <Area>` sections (e.g. Domain, Architecture, Roles, Conventions, Decisions) containing `### <Concept>` entries. Each entry has exactly four bullets — `Definition`, `Aliases`, `Relations`, `Source` — and stays compact (cap: 300 lines or 12 KB, whichever smaller). Manual edits are preserved when consistent; contradictions are flagged with a `<!-- TODO -->` comment for human review.
+
+#### `/rocket:context-clear`
+
+Wipes the project's rocket-managed contextualization files under `.roc/rocket/` (lexicon, logs, lock dirs, leftover temp files). Two-step: list, then delete with `force`.
+
+- `/rocket:context-clear` — list mode (no deletion).
+- `/rocket:context-clear force` — actually delete.
+
+Manual-only — never auto-triggered. Scoped to the current project; user-global state under `~/.roc/...` is not touched. The `## Project semantic context` block in `CLAUDE.md` is preserved; remove it manually if you also want to reset that.
 
 #### `/rocket:setup`
 

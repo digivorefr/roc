@@ -3,12 +3,12 @@ name: context-update
 disable-model-invocation: false
 context: fork
 agent: general-purpose
-description: Update the project's semantic lexicon at .claude/lexicon.md from the current conversation. Use this skill whenever the user invokes "/rocket:context-update", asks to "update context", "refresh lexicon", "update the lexicon", "rebuild project vocabulary", "mets a jour le contexte", "mets a jour le lexique", "rafraichis le lexique", or any similar request. Auto-invoke when a major semantic shift just happened in the conversation (new domain concept, new architectural decision, redefinition of an existing term) and the lexicon should capture it before the next turn.
+description: Update the project's semantic lexicon at .roc/rocket/lexicon.md from the current conversation. Use this skill whenever the user invokes "/rocket:context-update", asks to "update context", "refresh lexicon", "update the lexicon", "rebuild project vocabulary", "mets a jour le contexte", "mets a jour le lexique", "rafraichis le lexique", or any similar request. Auto-invoke when a major semantic shift just happened in the conversation (new domain concept, new architectural decision, redefinition of an existing term) and the lexicon should capture it before the next turn.
 ---
 
 # Project lexicon updater
 
-Maintain the project's semantic lexicon at `.claude/lexicon.md`: a compact, structured catalog of project-specific concepts, vocabulary, recurring patterns, roles, and decisions. The lexicon is read by `rocket:spec-writer`, `rocket:spec-maker`, and other agents to align their vocabulary with the user's. This skill is the only writer.
+Maintain the project's semantic lexicon at `.roc/rocket/lexicon.md`: a compact, structured catalog of project-specific concepts, vocabulary, recurring patterns, roles, and decisions. The lexicon is read by `rocket:spec-writer`, `rocket:spec-maker`, and other agents to align their vocabulary with the user's. This skill is the only writer.
 
 The skill runs in two modes:
 
@@ -17,7 +17,7 @@ The skill runs in two modes:
 
 ## Output contract
 
-- Write `.claude/lexicon.md` (and only that file) atomically via `.claude/lexicon.md.tmp` + `mv`, protected by `flock` on `.claude/lexicon.md.lock`.
+- Write `.roc/rocket/lexicon.md` (and only that file) atomically via `.roc/rocket/lexicon.md.tmp` + `mv`, protected by an `mkdir`-based atomic lock at `.roc/rocket/lexicon.md.lock.d/` (POSIX-portable; `flock` is not available by default on macOS).
 - The file conforms to the [Lexicon format](#lexicon-format) below. No deviation.
 - Final output to the caller is a single short paragraph: counts of added / merged / flagged entries, names of flagged entries. No prose elaboration. No emojis.
 - If the lexicon is unchanged after analysis, output "No update needed." and do not rewrite the file.
@@ -58,7 +58,7 @@ Areas are project-defined groupings (e.g. `Domain`, `Architecture`, `Roles`, `Co
 
 ### Step 1 — Load context
 
-1. Read `.claude/lexicon.md`. If absent, treat the existing lexicon as empty.
+1. Read `.roc/rocket/lexicon.md`. If absent, treat the existing lexicon as empty.
 2. Read the conversation transcript:
    - **Hook mode**: read from stdin (the wrapper pipes the transcript JSONL).
    - **Manual mode**: use the conversation context inherited by the fork.
@@ -110,9 +110,9 @@ If the budget cannot be met without dropping flagged entries, stop pruning and e
 
 1. Compose the file with the header comment first, areas sorted alphabetically, concepts sorted alphabetically within each area, four bullets per entry in the order `Definition` / `Aliases` / `Relations` / `Source`.
 2. Resolve the project root (use `$CLAUDE_PROJECT_DIR` if set, otherwise the cwd).
-3. Acquire a **non-blocking** exclusive `flock` on `.claude/lexicon.md.lock` (`flock -n`). On contention, abort with the summary `Lexicon update already in progress.` rather than waiting — this matches the wrapper's skip-on-contention behaviour.
-4. Write the rendered content to `.claude/lexicon.md.tmp`.
-5. `mv .claude/lexicon.md.tmp .claude/lexicon.md` (atomic on POSIX filesystems).
+3. Acquire a **non-blocking** atomic lock by attempting `mkdir .roc/rocket/lexicon.md.lock.d/`. If the directory already exists (lock held), abort with the summary `Lexicon update already in progress.` rather than waiting — this matches the wrapper's skip-on-contention behaviour. Release the lock by `rmdir` at every successful return path.
+4. Write the rendered content to `.roc/rocket/lexicon.md.tmp`.
+5. `mv .roc/rocket/lexicon.md.tmp .roc/rocket/lexicon.md` (atomic on POSIX filesystems).
 6. Release the lock.
 
 If the rendered content equals the previous content byte-for-byte, skip the write (idempotent no-op).
@@ -138,7 +138,7 @@ In manual mode, surface the summary directly to the user.
 
 ## Concurrency rules
 
-- The `flock` on `.claude/lexicon.md.lock` is mandatory. Two simultaneous fires must serialize.
+- The `mkdir` lock on `.roc/rocket/lexicon.md.lock.d/` is mandatory. Two simultaneous fires must serialize.
 - The second invocation reads the freshly-updated lexicon (Step 1 re-runs after acquiring the lock) and only contributes incremental information.
 
 ## Edge cases
@@ -146,11 +146,11 @@ In manual mode, surface the summary directly to the user.
 - **Lexicon does not exist**: Step 1 treats it as empty. Step 6 creates it.
 - **Lexicon edited manually by the user**: respect the edits unless they violate invariants (duplicates, dangling relations, missing keys). On invariant violation, mark the offending entry with a `<!-- TODO: invariant ... -->` comment instead of rewriting it.
 - **Transcript empty or trivial**: emit "No update needed." and skip the write.
-- **`.claude/` directory missing**: create it before writing.
+- **`.roc/rocket/` directory missing**: create it before writing (`mkdir -p .roc/rocket/`).
 
 ## What NOT to do
 
-- Do NOT modify any file other than `.claude/lexicon.md` and the temp/lock siblings.
+- Do NOT modify any file other than `.roc/rocket/lexicon.md` and the temp/lock siblings.
 - Do NOT run shell commands beyond what is needed to acquire the lock and perform the atomic write.
 - Do NOT include prose, examples, or commentary inside the lexicon file. Entries are definition + relationships only.
 - Do NOT rename existing concept names unless merging duplicates. Stable names matter.
@@ -184,19 +184,19 @@ Hi! I added two new entries to the lexicon. The first one is about webhooks...
 - The wrapper at `plugins/rocket/hooks/update-context.sh` reads the hook payload from stdin (JSON with a `transcript_path` field). Earlier drafts assumed an environment variable; the actual hook contract is stdin JSON.
 - The wrapper sets and exports `ROCKET_CONTEXT_UPDATE_INVOKED=1` before spawning the `claude -p` subprocess, so the subprocess's own `Stop` hook fires on a guard that exits immediately. Without this guard, the wrapper would re-invoke itself recursively (the lexicon-mtime debounce alone does not block the recursion when the subprocess concludes "No update needed.").
 - The wrapper exits 0 unconditionally because this is an `async` hook; propagating the subprocess status would risk emitting exit code 2 (the `Stop`-hook block signal) into the user's main session.
-- Both wrapper and skill use **non-blocking** `flock -n` on `.claude/lexicon.md.lock`. Concurrent fires skip rather than queue.
+- Both wrapper and skill use **non-blocking** atomic `mkdir .roc/rocket/lexicon.md.lock.d/`. Concurrent fires skip rather than queue.
 
 ## Manual validation
 
 Run these scenarios after any change to this skill, the wrapper, or the hook config. There is no automated test suite.
 
-1. **Cold start** — fresh project with no `.claude/` directory. Run `/rocket:setup`. Expected: `.claude/lexicon.md` created with the canonical header line, `## Project semantic context` block inserted in `CLAUDE.md`.
-2. **First hook fire** — finish one assistant turn that introduces a new domain concept. Expected: `.claude/lexicon-update.log` records `start` + `end`, lexicon receives a new entry, exit status 0.
+1. **Cold start** — fresh project with no `.roc/rocket/` directory. Run `/rocket:setup`. Expected: `.roc/rocket/lexicon.md` created with the canonical header line, `## Project semantic context` block inserted in `CLAUDE.md`.
+2. **First hook fire** — finish one assistant turn that introduces a new domain concept. Expected: `.roc/rocket/lexicon-update.log` records `start` + `end`, lexicon receives a new entry, exit status 0.
 3. **No-op turn** — finish a turn that introduces nothing new. Expected: log records the run; the skill's summary in the log says `No update needed.`; lexicon mtime unchanged; **next turn fires again without infinite loop** (the `ROCKET_CONTEXT_UPDATE_INVOKED` sentinel prevents recursion regardless of mtime).
 4. **Debounce** — finish two assistant turns within 30 s, both updating the lexicon. Expected: second fire logs `skip: debounced (...)` and exits 0.
 5. **Lock contention** — start two manual `/rocket:context-update` invocations simultaneously (or trigger one manually while a hook fire is in progress). Expected: one acquires the lock, the other logs `skip: lock held by another invocation` (wrapper) or emits `Lexicon update already in progress.` (skill).
 6. **`claude` CLI missing** — temporarily remove `claude` from `PATH`. Expected: hook exits silently, no log entry, no error surfaced to the user.
-7. **Manual lexicon edit** — edit `.claude/lexicon.md` by hand to add a malformed entry (e.g. missing `Aliases` bullet). Run `/rocket:context-update`. Expected: skill flags the entry with `<!-- TODO: invariant ... -->` rather than rewriting it; existing valid entries untouched.
+7. **Manual lexicon edit** — edit `.roc/rocket/lexicon.md` by hand to add a malformed entry (e.g. missing `Aliases` bullet). Run `/rocket:context-update`. Expected: skill flags the entry with `<!-- TODO: invariant ... -->` rather than rewriting it; existing valid entries untouched.
 8. **Idempotent re-run** — invoke `/rocket:context-update` twice in a row on an unchanged conversation. Expected: second invocation outputs `No update needed.` and does not rewrite the file.
 9. **Size cap** — manually balloon the lexicon past 300 lines, then run the skill. Expected: oldest non-flagged, non-referenced entries pruned until the file fits.
 10. **Recursion guard** — inspect the log of any successful run. Expected: never two consecutive `start:` lines without an intervening `end:`; never an exponential growth of log lines from a single user turn.

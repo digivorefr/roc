@@ -28,24 +28,26 @@ Inspect `$ARGUMENTS` after trimming whitespace and route to one of four paths.
 
 ### Empty argument — print state and help
 
-1. Run `mkdir -p ~/.claude/state/my-hand/` to ensure the directory exists.
-2. If `~/.claude/state/my-hand/mail-session.path` exists, `Read` it and report `Auto-restart: enabled, mail-session at <path>`.
+1. Run `mkdir -p ~/.roc/my-hand/` to ensure the directory exists.
+2. If `~/.roc/my-hand/mail-session.path` exists, `Read` it and report `Auto-restart: enabled, mail-session at <path>`.
 3. Otherwise, report `Auto-restart: disabled`.
 4. Append the line `Run /my-hand:inbox-watch start | stop | tick`.
 5. Stop. Do not invoke any tool beyond the read.
 
 ### `start`
 
-1. Run `mkdir -p ~/.claude/state/my-hand/`.
-2. Resolve the current working directory via `realpath .` (or `pwd` as fallback). Strip any trailing newline. Call this `MAIL_SESSION_PATH`.
-3. `Write` `MAIL_SESSION_PATH` to `~/.claude/state/my-hand/mail-session.path` as a single line, no surrounding whitespace.
-4. Check `~/.claude/state/my-hand/tone.md`. If absent, print: `Voice profile missing. Run /my-hand:tone-profile to enable reply suggestions.` Continue regardless.
+Issue every Bash call as a single atomic command. Do not chain with `&&`, `||`, or `;`. The harness's permission matcher inspects the literal command string and rejects compound forms.
+
+1. Run `mkdir -p ~/.roc/my-hand/` as one Bash call.
+2. As a separate Bash call, resolve the current working directory via `realpath .` (or `pwd` as fallback). Strip any trailing newline. Call this `MAIL_SESSION_PATH`.
+3. `Write` `MAIL_SESSION_PATH` to `~/.roc/my-hand/mail-session.path` as a single line, no surrounding whitespace.
+4. Check `~/.roc/my-hand/tone.md`. If absent, print: `Voice profile missing. Run /my-hand:tone-profile to enable reply suggestions.` Continue regardless.
 5. Invoke the `loop` skill via the `Skill` tool with the argument `10m /my-hand:inbox-watch tick`. The loop runs in the background of this conversation.
 6. Confirm to the user: `Mail session configured at <MAIL_SESSION_PATH>. Polling every 10 minutes.`
 
 ### `stop`
 
-1. Run `rm -f ~/.claude/state/my-hand/mail-session.path` to remove the auto-restart sentinel.
+1. Run `rm -f ~/.roc/my-hand/mail-session.path` to remove the auto-restart sentinel.
 2. Print exactly:
 
 ```
