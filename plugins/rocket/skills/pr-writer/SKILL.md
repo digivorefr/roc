@@ -32,24 +32,25 @@ The description is composed of one or more `### <Topic>` blocks. Each block foll
 
 ### Context paragraph
 
-- Maximum **2 short sentences**.
-- Follow the chain `situation → action → consequence → problem`. Sentence 1 captures situation + action (what we were doing and why). Sentence 2 captures consequence + problem (what broke or what was missing because of it).
+- **One sentence preferred**, two only if the second adds critical context the reviewer cannot infer.
+- Follow the chain `situation → action → consequence → problem` compressed into the available sentence(s). The reader needs to know what was happening, what broke, and to whom.
 - Product framing — describe what was happening to users, operators, or the system as a whole. Do not describe the code.
 - No file paths, no symbol names, no library names.
 
 ### Intent bullets (block 2)
 
-- **Exhaustive** on the strategic intent of the change: cover every dimension of *what we decided to do* and *why it solves the problem*.
-- Each bullet is a **logical decision**, phrased in product/functional terms. Not a code change.
+- **Maximum 3 bullets, prefer 2.** Pick the most important decisions; drop the rest.
+- Each bullet is **one short clause** (≤140 chars), one logical decision, phrased in product/functional terms.
+- No compound bullets: do not chain ideas with "and", semicolons, or em-dashes that hide a second decision. Split or drop.
 - Vocabulary stays close to the user/operator/system perspective. No file paths, no function names, no library specifics.
-- One bullet per distinct decision. No padding, no bullets that just rephrase a previous one.
 
 ### Change bullets (block 3)
 
-- List the **important technical changes** applied to the project: mechanisms added, libraries introduced, switches flipped, structural moves, contracts changed.
-- Each bullet is concrete and technical. May reference module-level concepts (e.g. "the queue worker", "the webhook handler") but **not** individual file paths.
-- Skip incidental edits (typos, formatting, dependency bumps unless they matter). One bullet per significant change.
-- If the PR is purely a refactor with no observable change, this block can still describe what moved and why the new structure is better.
+- **Maximum 3 bullets, prefer 2-3.** Pick the most consequential technical changes; merge small ones under a single bullet rather than expanding.
+- Each bullet is **one short clause** (≤140 chars) naming a single mechanism, switch, dependency, or contract change.
+- May reference module-level concepts (e.g. "the queue worker", "the webhook handler") but **not** individual file paths.
+- Skip incidental edits (typos, formatting, dependency bumps unless they matter).
+- If the PR is purely a refactor with no observable change, describe what moved and why the new structure is better — still capped at 3 bullets.
 
 ## Hard rules — what NOT to include
 
@@ -60,6 +61,8 @@ The description is composed of one or more `### <Topic>` blocks. Each block foll
 - Do NOT include emojis.
 - Do NOT include boilerplate like "this PR does X, Y, Z" — go straight into the first topic.
 - Do NOT merge unrelated changes into a single topic, and do NOT split one logical change across multiple topics.
+- Do NOT exceed 3 bullets in any single block. If you have more, you have not picked the most important — collapse or drop.
+- Do NOT chain multiple ideas inside one bullet. One bullet, one idea, one short clause.
 
 ## Workflow
 
@@ -91,9 +94,9 @@ Read the diff and group the changes into independent **topics**. A topic is a co
 
 For each topic, produce the three parts in order:
 
-1. **Context** — apply the `situation → action → consequence → problem` chain in 2 sentences max. Stop the moment the reader understands why the change matters.
-2. **Intent bullets** — list every strategic decision behind the change. Each bullet is a sentence about *what we now do* (or no longer do), phrased in product/operator terms.
-3. **Change bullets** — list the concrete technical changes. Each bullet names a mechanism, a switch, a dependency, a structural move. Group small tweaks under a single bullet; do not pad.
+1. **Context** — compress the `situation → action → consequence → problem` chain into one sentence (two only if essential). Stop the moment the reader understands why the change matters.
+2. **Intent bullets** — at most 3, prefer 2. One short clause per bullet, one decision per bullet, product/operator perspective.
+3. **Change bullets** — at most 3, prefer 2-3. One short clause per bullet naming one mechanism or contract change. Group small tweaks under a single bullet; never pad.
 
 If you have genuine doubt about the product angle of a topic (e.g. the diff is purely internal refactoring with no user-visible impact), ask the user one short clarifying question before writing that block. Do NOT invent a product framing.
 
@@ -111,21 +114,20 @@ Output:
 ```md
 ### Outbound webhook idempotence on Fasap
 
-Outbound webhooks were retried whenever the Fasap target took too long to respond. The retry sometimes arrived after the original request had succeeded, creating duplicate cases on Fasap and forcing the operations team to deduplicate by hand each morning.
+Webhook retries on slow Fasap calls produced duplicate cases that operators had to deduplicate by hand every morning.
 
-- Each outbound case is now processed at most once on the Fasap side, regardless of how many retries MerciYanis issues
-- The HTTP handler acknowledges the request immediately, so the upstream sender stops retrying as soon as the message is accepted
-- Operators no longer have to deduplicate Fasap cases manually
+- Outbound cases are now processed at most once on Fasap, eliminating the daily manual deduplication
+- The webhook handler stops the upstream retry storm by acking 200 as soon as the message is accepted
 
-- Added an idempotence key check inside the queued job, scoped per `(case_id, target_system)` and persisted in Redis with a 7-day TTL
-- Switched the webhook handler to respond 200 synchronously and enqueue processing as a background job
-- Surfaced an idempotence-skip log entry so support can confirm which retries were absorbed
+- Added an idempotence key per `(case_id, target_system)` in Redis, 7-day TTL
+- Webhook handler now acks 200 synchronously and enqueues processing as a background job
+- Logged an idempotence-skip line so support can confirm which retries were absorbed
 
 ### File upload queue isolation
 
-The shared sequential queue was being blocked for up to 90 seconds per retry cycle whenever a file upload stalled. Other case events queued behind the upload were delayed by the same amount, breaking the SLA for time-sensitive notifications.
+A stalled upload could block the shared case-event queue for up to 90 seconds, breaking the SLA on unrelated time-sensitive events.
 
-- File uploads no longer share the case-event queue, so a slow upload cannot delay unrelated events
+- A slow upload no longer delays unrelated events
 - Upload ordering is preserved within the dedicated queue (FIFO per case)
 
 - Introduced a dedicated upload worker fed by its own RabbitMQ queue
@@ -145,4 +147,6 @@ The shared sequential queue was being blocked for up to 90 seconds per retry cyc
 - A change bullet that says `Modified user.service.ts and updated user.controller.ts` — file paths leak into the description.
 - A description with a "Test plan" section.
 - A topic merging two unrelated concerns into one block, or splitting one concern across two blocks.
-- Padding bullets to look more thorough. If two intent bullets cover everything, ship two.
+- Padding bullets to look more thorough. If one intent bullet covers everything, ship one.
+- A bullet that runs to two or three lines because it joins multiple ideas with "and"/";"/em-dashes — the reader skims, the second idea is lost.
+- Four or more bullets in a single block — that's a sign you have not picked the most important.
