@@ -201,6 +201,27 @@ The `.claude/` directory remains exclusively for Claude Code's own state (plugin
 5. Run `/reload-plugins` between edits — no need to restart.
 6. To validate the marketplace itself end-to-end, run `/plugin marketplace add .` then `/plugin install <plugin>@roc`.
 
+## Project conventions
+
+<!-- Read by rocket:spec-maker, rocket:spec-writer -->
+
+### Stack
+
+- Language(s): Bash, Python 3.11+, Markdown
+- Runtime / framework: PyInstaller for compiled binaries, Claude Code plugin harness
+- Package manager: none (pip inside ephemeral venvs during builds only)
+- Test framework: none (manual validation)
+- Background context: enabled
+
+### Verification command
+
+There is no automated verification command. Validation is manual:
+
+1. `claude --plugin-dir plugins/<plugin-name>` to load the plugin.
+2. Exercise each modified skill via its slash command or natural-language trigger.
+3. For agents, invoke via the `Task` tool.
+4. Run `/reload-plugins` between edits.
+
 ## What NOT to do
 
 - Do not add a skill for a workflow that already exists as a built-in (e.g. `/init`, `/review`, `/security-review`).
@@ -209,6 +230,11 @@ The `.claude/` directory remains exclusively for Claude Code's own state (plugin
 - Do not add files to a plugin's `.claude-plugin/` directory other than `plugin.json`. Skills, agents, and hooks live at the plugin root (`plugins/<plugin>/skills/`, `plugins/<plugin>/agents/`, `plugins/<plugin>/hooks/`).
 - Do not put `marketplace.json` anywhere other than the repo-root `.claude-plugin/`.
 - Do not commit `CLAUDE.local.md` or `.claude/settings.local.json`. They are personal.
+- Do not add features beyond the spec.
+- Do not create abstractions for one-time use.
+- Do not validate scenarios that cannot occur (trust framework guarantees and internal callers).
+- Do not write comments that restate what the code does — only comments that explain non-obvious *why*.
+- Do not create README/docs files unless the user asks.
 
 ## When this CLAUDE.md should change
 
@@ -228,3 +254,7 @@ Keep entries terse. If a section grows past ~40 lines, split it into a file unde
 - [Plugins guide](https://code.claude.com/docs/en/plugins)
 - [Plugin marketplaces](https://code.claude.com/docs/en/plugin-marketplaces)
 - [CLAUDE.md memory guide](https://code.claude.com/docs/en/memory)
+
+## Project semantic context
+
+Project-specific concepts, vocabulary, patterns, and decisions are documented in [`.roc/rocket/lexicon.md`](.roc/rocket/lexicon.md). Agents read this file before generating specs, plans, or implementations and align their vocabulary on it. The file is auto-maintained by `rocket:context-update`; manual edits are preserved when consistent.
