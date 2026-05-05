@@ -1,6 +1,6 @@
 {
   "name": "my-hand",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "description": "my-hand — personal-expression toolkit for Claude Code: reMarkable page capture and Gmail inbox watcher with voice-grounded reply drafts (macOS-arm64)",
   "author": {
     "name": "Pierre Bonnin",

@@ -7,12 +7,11 @@ allowed-tools:
   - Bash(mkdir:*)
   - Bash(cat:*)
   - Bash(rm:*)
-  - Bash(osascript:*)
+  - Bash("${CLAUDE_PLUGIN_ROOT}/bin/darwin-arm64/inbox-poll":*)
   - mcp__*__search_threads
   - mcp__*__get_thread
   - Read
   - Write
-  - Edit
   - Skill
 ---
 

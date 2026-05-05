@@ -125,7 +125,7 @@ A personal-expression toolkit. Two cooperating but independent feature sets, bot
 - **macOS-arm64.** Linux, Intel Mac, and Windows are out of scope.
 - For the reMarkable feature: a **reMarkable 2** tablet (firmware 3.x+), plugged in over USB, screen unlocked, and **USB web interface** enabled (`Settings → Storage → USB web interface`). The device must answer at `http://10.11.99.1`.
 - For the Gmail feature: a **Gmail MCP server** installed and bound on the host, exposing `search_threads`, `get_thread`, `create_draft`. `osascript` (default on macOS) for banner notifications.
-- **No runtime dependencies.** Ships a self-contained ~17 MB binary for the reMarkable pipeline; the Gmail features are pure prompt orchestration.
+- **No runtime dependencies.** Ships self-contained binaries (~17 MB for the reMarkable pipeline, ~7 MB for the inbox poller); no Python or Homebrew needed at runtime.
 
 See [`plugins/my-hand/README.md`](plugins/my-hand/README.md) for the rendering pipeline, the mail-session flow, troubleshooting, and what is intentionally deferred.
 

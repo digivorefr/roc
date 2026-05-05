@@ -8,7 +8,7 @@ A Claude Code **marketplace** named `roc` (displayed as **Roc**). It currently d
 
 `rocket` ships a curated set of skills and agents for assisted development; every skill and agent here is meant to be **stack-agnostic** and reused across multiple codebases.
 
-`my-hand` ships four slash commands (`/my-hand:remarkable-grab`, `/my-hand:tone-profile`, `/my-hand:inbox-watch`, `/my-hand:inbox-reply`), one forked skill (`inbox-watch-tick`), one `SessionStart` hook, and a compiled binary for the reMarkable capture pipeline. It is the first sanctioned exception to the stack-agnostic rule (see Hard rule 4) on two grounds: it depends on local hardware (reMarkable tablet over USB) **and** on a per-user Gmail MCP server.
+`my-hand` ships four slash commands (`/my-hand:remarkable-grab`, `/my-hand:tone-profile`, `/my-hand:inbox-watch`, `/my-hand:inbox-reply`), one forked skill (`inbox-watch-tick`), one `SessionStart` hook, and two compiled binaries (reMarkable capture pipeline and inbox poller). It is the first sanctioned exception to the stack-agnostic rule (see Hard rule 4) on two grounds: it depends on local hardware (reMarkable tablet over USB) **and** on a per-user Gmail MCP server.
 
 Each consumer project declares its own stack-specific conventions (test command, typing rules, error-handling style) in its own `CLAUDE.md`. The conventions block is generated interactively by the [`/rocket:setup`](plugins/rocket/skills/setup/SKILL.md) skill — its template is the source of truth. The plugins read those rules instead of carrying their own.
 

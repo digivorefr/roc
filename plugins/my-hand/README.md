@@ -3,7 +3,7 @@
 A Claude Code plugin that hosts personal-expression features tied to the user's own voice, hand, and identity. It bundles two cooperating but independent feature sets:
 
 - **reMarkable page capture** — pull the current page of a reMarkable 2 notebook over USB into the model as a multimodal image.
-- **Gmail inbox watcher with voice-grounded reply drafts** — distill the user's email voice from sent Gmail, periodically poll the inbox in a dedicated mail-session conversation, suggest 2-4 sentence replies in that voice, and on demand finalize a Gmail draft inside the existing thread. Drafts are never sent.
+- **Gmail inbox watcher with voice-grounded reply drafts** — distill the user's email voice from sent Gmail, periodically poll the inbox in a dedicated mail-session conversation, suggest 2-4 sentence replies in that voice, and on demand finalize a Gmail draft inside the existing thread. Drafts are never sent. The polling skill uses Haiku and delegates all non-LLM work (state I/O, ID comparison, table rendering, locking, macOS notifications) to the `inbox-poll` binary, reducing per-tick token cost by ~77% and dollar cost by ~97% compared to v1.
 
 Slash commands shipped:
 
@@ -20,7 +20,7 @@ Slash commands shipped:
 
 - A **reMarkable 2** tablet, firmware **3.x or later**.
 - The tablet **plugged in over USB**, screen **unlocked**, and **USB web interface** enabled (`Settings -> Storage -> USB web interface`). The device must answer at `http://10.11.99.1`.
-- **No runtime dependencies.** The plugin ships a self-contained ~17 MB binary at `bin/darwin-arm64/my-hand-grab` with `rmc`, `cairosvg`, and `libcairo` (plus transitive `.dylib` deps) bundled via PyInstaller. The build itself (only relevant to maintainers) requires Python 3.11+ and `brew install cairo` — see `build/build.sh`.
+- **No runtime dependencies.** The plugin ships self-contained binaries at `bin/darwin-arm64/` bundled via PyInstaller. `my-hand-grab` (~17 MB) bundles `rmc`, `cairosvg`, and `libcairo` (plus transitive `.dylib` deps). `inbox-poll` (~8-10 MB) uses only the Python stdlib and has no native C deps. The build itself (only relevant to maintainers) requires Python 3.11+ and `brew install cairo` (for the grab binary only) — see `build/build.sh`.
 
 ### Gmail feature
 
@@ -132,11 +132,12 @@ The model looks up the keyword against the most recent tick's `pending_replies`,
 ### Gmail
 
 - **Polling interval.** 10 minutes via the `loop` skill. Empty ticks are silent.
+- **Token-optimized polling (v2).** The `inbox-watch-tick` skill runs as a Haiku fork and delegates all non-LLM work to the `inbox-poll` binary. Empty ticks cost ~3K tokens (down from ~15K). Non-empty ticks cost ~5K + ~2K per thread (down from ~20K+). Combined with Haiku pricing, dollar cost is ~97% lower than v1.
 - **Auto-resume scope.** Only the project recorded in `~/.roc/my-hand/mail-session.path` triggers the SessionStart bootstrap. Every other project is untouched.
 - **Voice profile cap.** `tone.md` is capped at 5 KB. The model trims before writing if needed.
 - **Reply suggestions.** 2-4 sentences, language-matched to the source message.
 - **Drafts only.** `/my-hand:inbox-reply` uses `create_draft` exclusively. Sending always happens manually via the Gmail UI.
-- **Concurrency.** Ticks are serialized by an atomic `mkdir`-based lock at `~/.roc/my-hand/mail-poll.lock.d/`. A stale lock (mtime > 600 s) is reaped automatically.
+- **Concurrency.** Ticks are serialized by an atomic `mkdir`-based lock at `~/.roc/my-hand/mail-poll.lock.d/`, managed by the `inbox-poll` binary. A stale lock (mtime > 600 s) is reaped automatically.
 - **Notification language.** The macOS banner title is intentionally French (`Claude — N nouveau(x) mail(s)`) for one-glance recognition. The body content is English-clean. This is the single intentional French string in the plugin.
 
 ## Troubleshooting
