@@ -23,6 +23,7 @@ CLAUDE.local.md
 .roc/*/*.lock.d/
 .roc/*/*.log
 .roc/*/*.log.*
+.roc/*/*.json
 
 # Environment / secrets
 .env

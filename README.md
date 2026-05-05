@@ -85,7 +85,17 @@ Updates the project's semantic lexicon at `.roc/rocket/lexicon.md` from the curr
 
 - `/rocket:context-update`
 
-Auto-triggered by Claude when a major semantic shift just happened in the conversation. Also auto-runs in the background after every assistant turn via a `Stop` hook (asynchronous, non-blocking, `claude -p --model "sonnet[1m]"` subprocess). The hook is debounced 30 s, tails the transcript to its last 500 lines, runs them through a stripper that removes token-heavy fields (`signature`, `thinking`, `originalFile`, image base64) and caps each line at 8 KB, then pipes the result to the subprocess. Logs land in `.roc/rocket/lexicon-update.log` (rotated at 1 MB, last 3 kept). Bootstrap the lexicon and the `## Project semantic context` reference in `CLAUDE.md` by running [`/rocket:setup`](#rocketsetup).
+Auto-triggered by Claude when a major semantic shift just happened in the conversation. Also auto-runs in the background after every assistant turn via a `Stop` hook (asynchronous, non-blocking), gated by a multi-stage pipeline that reduces background cost by ~95%:
+
+1. **Per-project toggle** — requires `- Background context: enabled` in the `### Stack` section of the project's `CLAUDE.md`. Disabled by default; opt in via [`/rocket:setup`](#rocketsetup) or manual edit.
+2. **Debounce** — skips if the lexicon was updated within the last 300 s.
+3. **Heuristic pre-filter** — the `context-gate` binary rejects tool-only turns and short turns (<5 content lines), eliminating ~90% of fires at zero LLM cost.
+4. **Haiku gate** — a minimal Haiku classifier (~800 tokens) checks whether the delta introduces new domain concepts. Rejects ~80% of remaining fires.
+5. **Scoped Sonnet writer** — only the ~2% of turns that pass all gates trigger a Sonnet subprocess, and with a focused prompt (~5K tokens) instead of the full 500-line transcript tail.
+
+Manual invocation (`/rocket:context-update`) bypasses the toggle, heuristic, and Haiku gate — it runs the full Sonnet workflow directly.
+
+Logs land in `.roc/rocket/lexicon-update.log` (rotated at 1 MB, last 3 kept). Cursor state is tracked in `.roc/rocket/context-gate-state.json` (gitignored). Bootstrap the lexicon and the `## Project semantic context` reference in `CLAUDE.md` by running [`/rocket:setup`](#rocketsetup).
 
 The lexicon is a flat catalog of `## <Area>` sections (e.g. Domain, Architecture, Roles, Conventions, Decisions) containing `### <Concept>` entries. Each entry has exactly four bullets — `Definition`, `Aliases`, `Relations`, `Source` — and stays compact (cap: 300 lines or 12 KB, whichever smaller). Manual edits are preserved when consistent; contradictions are flagged with a `<!-- TODO -->` comment for human review.
 

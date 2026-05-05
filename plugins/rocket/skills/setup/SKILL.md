@@ -64,13 +64,14 @@ One `AskUserQuestion` call with 4 questions. For each detected value, put it as 
 1. **`Stack summary`** — present the detected language + framework as Recommended. Two-three alternatives covering common stacks.
 2. **`Verify cmd`** — present detected `check`/`test` script(s) as Recommended. If multiple were detected, list each as a separate option (max 4).
 3. **`Typing rules`** — `Strict (Recommended)` / `Loose` / `Not applicable` (untyped language).
-4. **`Optional sections`** — `multiSelect: true`. Options: `Logging & observability` / `Error handling philosophy` / `Naming and structure` / `Async control flow`.
+4. **`Background context`** — "Enable automatic background context updates? When enabled, a lightweight classifier runs after each assistant turn and updates the project lexicon (`.roc/rocket/lexicon.md`) when new domain concepts appear. This has a small token cost (~$0.10-0.15 per 2-hour session). You can always run `/rocket:context-update` manually regardless of this setting." Options: `Disabled (Recommended)` / `Enabled`.
+5. **`Optional sections`** — `multiSelect: true`. Options: `Logging & observability` / `Error handling philosophy` / `Naming and structure` / `Async control flow`.
 
-Mandatory sections (Stack, Verification command, What NOT to do) are always written and not listed in question 4. Sections marked `Skip ours` at Step 3 are dropped here too.
+Mandatory sections (Stack, Verification command, What NOT to do) are always written and not listed in question 5. Sections marked `Skip ours` at Step 3 are dropped here too.
 
 ### Step 5 — Round 2 conditional
 
-For each section the user ticked in Round 1.4 AND that was not marked `Skip ours` at Step 3, ask the corresponding question. Batch in one `AskUserQuestion` call (up to 4 questions). Skip the entire step if no questions accumulate.
+For each section the user ticked in Round 1.5 AND that was not marked `Skip ours` at Step 3, ask the corresponding question. Batch in one `AskUserQuestion` call (up to 4 questions). Skip the entire step if no questions accumulate.
 
 - **Logging & observability** — `Logger`: ask for the logger library or wrapper file path. Use the value extracted from existing CLAUDE.md (Step 1.5) as Recommended if available.
 - **Error handling philosophy** — `Error policy`: `Standard (Recommended)` (default rules) / `Custom` (user provides their own).
@@ -203,6 +204,7 @@ The text between `=== TEMPLATE START ===` and `=== TEMPLATE END ===` is the lite
 - Runtime / framework: <TO FILL: runtime + framework>
 - Package manager: <TO FILL: pnpm / yarn 4 / npm / uv / poetry / cargo / go modules / ...>
 - Test framework: <TO FILL: Jest / Vitest / pytest / go test / cargo test / ...>
+- Background context: <TO FILL: enabled / disabled>
 
 ### Verification command
 

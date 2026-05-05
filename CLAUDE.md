@@ -30,9 +30,11 @@ README.md                           Public documentation (install, list of plugi
 CLAUDE.md                           This file — maintainer guide
 ```
 
-A plugin uses whichever of `agents/`, `skills/`, `commands/`, `hooks/`, `bin/`, `build/` it needs — none are mandatory. `rocket` uses `agents/`, `skills/`, `hooks/`. `my-hand` uses `commands/`, `skills/`, `hooks/`, `bin/darwin-arm64/`, `build/`.
+A plugin uses whichever of `agents/`, `skills/`, `commands/`, `hooks/`, `bin/`, `build/` it needs — none are mandatory. `rocket` uses `agents/`, `skills/`, `hooks/`, `bin/`, `build/`. `my-hand` uses `commands/`, `skills/`, `hooks/`, `bin/darwin-arm64/`, `build/`.
 
 Currently there are two plugins: `plugins/rocket/` and `plugins/my-hand/`. Add a sibling directory under `plugins/` to ship a new plugin and register it in `marketplace.json#plugins`.
+
+Both plugins now have compiled binaries: `my-hand` ships two (`my-hand-grab`, `inbox-poll`) at `bin/darwin-arm64/` (macOS-arm64 only), and `rocket` ships one (`context-gate`) at `bin/` (platform-independent, no native deps). Build scripts live at `plugins/<plugin>/build/build.sh`.
 
 The conventions block template lives inside [`plugins/rocket/skills/setup/SKILL.md`](plugins/rocket/skills/setup/SKILL.md) (between `=== TEMPLATE START ===` and `=== TEMPLATE END ===`). It is the single source of truth — edit it there.
 
