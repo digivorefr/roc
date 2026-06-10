@@ -18,8 +18,7 @@ CLAUDE.local.md
 .claude/*.lock
 .claude/*.lock.d/
 
-# Plugin runtime artefacts under .roc/<plugin>/ — keep committable state
-# (lexicon.md, etc.) but ignore lock dirs and runtime logs.
+# Plugin runtime state under .roc/<plugin>/ (state location convention)
 .roc/*
 
 # Environment / secrets

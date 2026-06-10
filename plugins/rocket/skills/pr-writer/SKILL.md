@@ -1,6 +1,6 @@
 ---
 name: pr-writer
-description: Generate a structured, English, product-focused PR description organised by topic. Use this skill whenever the user invokes "/rocket:pr-writer", asks for a pull request description, a PR summary, a PR body, says "write a PR description", "rédige une description de PR", "prépare un descriptif de PR", "PR body", "pull request body", or any similar request. The skill either scans the current git changes or accepts context provided by the user.
+description: Generate a structured, English, product-focused PR description organised by topic. Use this skill whenever the user invokes "/rocket:pr-writer", "/rocket:pr-writer rebase" (pick which commits since the default branch define the scope), asks for a pull request description, a PR summary, a PR body, says "write a PR description", "rédige une description de PR", "prépare un descriptif de PR", "PR body", "pull request body", or any similar request. The skill scans the current git changes, the selected commits, or accepts context provided by the user.
 ---
 
 # PR Description Writer
@@ -14,6 +14,7 @@ The description is composed of one or more `### <Topic>` blocks. Each block foll
 - **Format**: a single markdown code block containing the description, ready to copy-paste into a GitHub PR body.
 - **Language**: English.
 - **Tone**: product-first for context and intent, technical for the change list.
+- **Global budget**: 1-3 topics for a typical PR; more than 3 only when the PR genuinely ships independent features. The whole description stays under **30 lines**. When in doubt, merge topics — two changes serving one reviewable intent are one topic. The reviewer reads this in under a minute; every line beyond the budget works against that.
 - **Heading depth**: only `###` headings, one per topic. No `##` parent, no `####` children. Flat list of topics.
 - **Block shape**: each topic block is exactly three parts separated by a single blank line — context paragraph, intent bullets, change bullets. No labels between them; the reader infers from position and content style.
 
@@ -39,14 +40,14 @@ The description is composed of one or more `### <Topic>` blocks. Each block foll
 
 ### Intent bullets (block 2)
 
-- **Maximum 3 bullets, prefer 2.** Pick the most important decisions; drop the rest.
+- **Default 2 bullets, maximum 3** — use the third only when dropping it loses a reviewer-relevant decision. Pick the most important; drop the rest.
 - Each bullet is **one short clause** (≤140 chars), one logical decision, phrased in product/functional terms.
 - No compound bullets: do not chain ideas with "and", semicolons, or em-dashes that hide a second decision. Split or drop.
 - Vocabulary stays close to the user/operator/system perspective. No file paths, no function names, no library specifics.
 
 ### Change bullets (block 3)
 
-- **Maximum 3 bullets, prefer 2-3.** Pick the most consequential technical changes; merge small ones under a single bullet rather than expanding.
+- **Default 2 bullets, maximum 3** — use the third only when dropping it loses a reviewer-relevant mechanism. Merge small changes under a single bullet rather than expanding.
 - Each bullet is **one short clause** (≤140 chars) naming a single mechanism, switch, dependency, or contract change.
 - May reference module-level concepts (e.g. "the queue worker", "the webhook handler") but **not** individual file paths.
 - Skip incidental edits (typos, formatting, dependency bumps unless they matter).
@@ -68,18 +69,33 @@ The description is composed of one or more `### <Topic>` blocks. Each block foll
 
 ### Step 1 — Gather context
 
-Two cases:
+Three cases:
 
-**Case A: context provided by the user** (they pasted a diff, a description, a spec, or previous session content)
+**Case A: the argument is `rebase`**
+- Resolve the scope with the [scope selection procedure](#scope-selection--rebase-mode) below, then continue at Step 2 with the resulting diff.
+
+**Case B: context provided by the user** (they pasted a diff, a description, a spec, or previous session content)
 - Use that context directly. Do NOT run git commands.
 
-**Case B: no context provided**
+**Case C: no argument, no context provided**
 - Run these in order, use whichever yields content:
   1. `git diff HEAD` (staged + unstaged vs HEAD)
   2. `git diff --cached` (staged only)
   3. `git diff @{upstream}..HEAD` (commits ahead of remote)
 - Also run `git log --oneline @{upstream}..HEAD 2>/dev/null || git log --oneline -5` for commit context.
 - If nothing yields output, tell the user no changes are detected and ask for context.
+
+### Scope selection — `rebase` mode
+
+1. Detect the base branch: `git symbolic-ref refs/remotes/origin/HEAD --short` (strip the `origin/` prefix); if unset, use `main`, then `master`, whichever exists.
+2. List the commits ahead of the base with `git log <base>..HEAD --oneline`, and check for uncommitted changes with `git status --porcelain`.
+3. If there are no commits ahead and no uncommitted changes, inform the user and stop.
+4. Print the commit list numbered from 1 (oldest first) so entries can be referenced by number.
+5. Ask exactly **one** `AskUserQuestion` (`multiSelect: true`, header `Scope`):
+   - With 1-2 commits ahead: one option per commit, plus `Uncommitted changes` if any exist.
+   - With 3+ commits ahead: `All commits since <base>`, plus `Uncommitted changes` if any exist.
+   - The automatic `Other` option lets the user type specific numbers (e.g. `1, 3`); resolve them against the printed list.
+6. Build the scope: concatenate `git show <sha>` for each selected commit; append `git diff HEAD` when uncommitted changes are selected.
 
 ### Step 2 — Identify topics
 

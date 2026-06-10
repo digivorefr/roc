@@ -1,199 +1,100 @@
 ---
 name: setup
 disable-model-invocation: true
-description: Initialize or update the project's CLAUDE.md with the conventions block consumed by rocket:spec-maker and rocket:spec-writer. Reads any existing CLAUDE.md to detect language, tone, and overlapping sections, then asks the user how to integrate before writing. Auto-detects stack signals from manifests and from the existing CLAUDE.md prose. Manual-only — invoked by the user via "/rocket:setup".
+description: Initialize or update the project's CLAUDE.md with the conventions block consumed by rocket:spec-maker and rocket:spec-writer. Detects the stack from manifests, lockfiles, CI workflows, and lint configs, composes the complete block, and asks for a single confirmation before writing. Safe to re-run anytime — only the marker-delimited block is ever touched. Manual-only — invoked by the user via "/rocket:setup".
 ---
 
 # Project conventions setup
 
-The user wants to add (or refresh) a project conventions block in this project's `CLAUDE.md`. That block is read by `rocket:spec-maker` and `rocket:spec-writer` to follow project-specific stack rules.
+Write (or refresh) the `## Project conventions` block in this project's `CLAUDE.md`. The block is read by `rocket:spec-maker` and `rocket:spec-writer` so they follow project-specific stack rules instead of hunting for them.
 
-The skill must integrate the block **harmoniously** into whatever exists already: matching language, tone, heading depth, and avoiding content duplication. Drive an interactive flow that surfaces every integration decision to the user before writing.
+Philosophy: **detect everything detectable, compose the complete result, show one diff, ask once.** The user's time is spent approving, not answering a questionnaire.
+
+## Managed region
+
+The block is delimited by literal markers:
+
+```
+<!-- rocket:conventions:start -->
+...block content...
+<!-- rocket:conventions:end -->
+```
+
+- The skill only ever writes between the markers (plus inserting the marker pair on first run).
+- Everything outside the markers is never modified — re-running can never destroy user content.
+- Re-running with unchanged detection results is a no-op: report "already up to date" and stop.
 
 ## Workflow
 
-### Step 1 — Analyze existing CLAUDE.md
+### Step 1 — Detect
 
-If `CLAUDE.md` does not exist at the repo root: skip to Step 2 with `existing = none`.
+Read files only. **Never execute a project command.** Collect in parallel reads:
 
-If it exists, **read the full file content** (not just one heading) and produce an internal analysis:
+1. **Manifests** — `package.json` (name, `packageManager`, `engines`, key dependencies), `pyproject.toml`, `go.mod`, `Cargo.toml`, `Gemfile`, `composer.json` → language, runtime, framework.
+2. **Lockfiles** — `pnpm-lock.yaml`, `yarn.lock`, `package-lock.json`, `bun.lockb`, `uv.lock`, `poetry.lock` → package manager.
+3. **CI workflows** — `.github/workflows/*.yml`, `.gitlab-ci.yml`, `.circleci/config.yml`: extract the lint/type/test commands CI actually runs. This is the **highest-authority source** for the verification command — a command CI runs outranks a guessed script name.
+4. **Manifest scripts and Makefile targets** (`check`, `test`, `lint`, `typecheck`) — fallback candidates for the verification command.
+5. **Lint/format/type configs** — `.eslintrc*`, `biome.json`, `.prettierrc`, `ruff.toml`, `mypy.ini`, `tsconfig.json` strictness flags → typing rules and lint posture.
+6. **Monorepo signals** — `workspaces` globs, `pnpm-workspace.yaml`, `turbo.json`, `nx.json` → whether the verification command runs at the root or per package.
+7. **Existing `CLAUDE.md`** — dominant prose language, voice and heading case (see [Style adaptation](#style-adaptation-guidelines)), an existing managed region (markers) or a legacy `## Project conventions` block (no markers), and any conventions already stated in prose (test commands in backticks, logger names, typing rules). Prose statements rank just below CI as a source: the user wrote them deliberately.
 
-1. **Language** — the dominant language of the prose (FR / EN / other). Judge from the body, not from code blocks or headings alone.
-2. **Heading structure** — list every `#`, `##`, `###` heading with its line number and depth. Note the deepest level used.
-3. **Tone signals** — capture the prevailing voice, sentence length, and bullet density. See [Style adaptation guidelines](#style-adaptation-guidelines).
-4. **Overlapping sections** — for every existing `##`/`###` section, judge semantically whether it covers the same ground as one of the template sections (Stack, Verification command, Typing rules, Error handling, Logging & observability, Naming and structure, Async control flow, What NOT to do). A section overlaps if a reasonable reader would expect to find that information in either place. Use semantic judgment, not keyword matching: `## Tests` and `## Quality gate` and `## How to validate` all overlap with "Verification command".
-5. **Already-declared conventions** — extract any value the existing prose already states: test commands inside backtick blocks, package manager names mentioned, logger libraries cited, "no `any`" or similar typing rules. These will become Recommended values in Round 1.
-6. **Existing instance of our block** — check for `## Project conventions` (new format) or `## Project conventions (read by` (legacy format from older skill versions).
+Record the **source of every detected value** — it is shown in the preview.
 
-Do not reveal the analysis to the user yet. Hold it for Step 3.
+### Step 2 — Compose
 
-### Step 2 — Auto-detect signals from manifests
+Build the complete block from the [Template](#template):
 
-Read these in parallel. Do not run any command.
+1. Substitute every `<TO FILL: ...>` placeholder with the detected value.
+2. **Mandatory sections**, always present: `Stack`, `Verification command`, `What NOT to do`. `Typing rules` is included for typed languages (strict variant by default; loose variant only when the existing CLAUDE.md or lint config says so — see [Typing rule variants](#typing-rule-variants)) and dropped for untyped ones.
+3. **Optional sections** (`Error handling philosophy`, `Logging & observability`, `Naming and structure`, `Async control flow`) are included **only when detection found a real signal** — a logger library in the dependencies, an established file-naming pattern, an async-heavy stack. No signal → omitted; the user can request them via the Adjust loop.
+4. Render in the dominant language of the existing CLAUDE.md (translate headings per [Section translation hints](#section-translation-hints)); match its voice, heading case, and bullet density. Default with no existing file: English, terse imperative.
+5. **Preserve user edits**: if a managed region or legacy block exists and one of its lines conflicts with a freshly detected value, keep the user's line and list the conflict in the Step 5 summary. Detection refreshes facts; it does not overrule deliberate choices.
 
-- `package.json` — language is JS/TS, capture `name`, `packageManager`, `engines.node`, key dependencies (`next`, `react`, `express`, `nestjs`, `fastify`, `vue`...)
-- `pyproject.toml` — language is Python, capture `project.name`, `requires-python`, `[tool.poetry]` / `[tool.uv]` markers
-- `go.mod`, `Cargo.toml`, `Gemfile`, `composer.json` — capture language and version if present
-- Lockfiles — `pnpm-lock.yaml`, `yarn.lock`, `package-lock.json`, `bun.lockb`, `uv.lock`, `poetry.lock`, `Pipfile.lock` — infer the package manager
-- `package.json#scripts.check`, `scripts.test`, `scripts.lint` — candidates for the verification command
-- `pyproject.toml` task runners (`[tool.poe.tasks]`, `[tool.taskipy.tasks]`) — same
-- `Makefile` — candidates if a `check` or `test` target exists
+### Step 3 — Confirm (single round)
 
-Merge these with the conventions extracted from the existing CLAUDE.md prose (Step 1.5). Manifests win on objective facts (package manager from lockfile); CLAUDE.md prose wins when it explicitly contradicts a manifest hint (the user's intent overrides the toolchain).
+Show, in this order:
 
-### Step 3 — Integration plan
+1. The unified diff of `CLAUDE.md` (creation diff if the file is absent; diff limited to the managed region otherwise), wrapped in a ```` ```diff ```` block.
+2. One line per detected value with its source, e.g. `verification command: yarn check — from .github/workflows/ci.yml`.
 
-Skip this step entirely if **all** of the following are true: no existing CLAUDE.md, OR (existing CLAUDE.md has no overlapping sections AND no instance of our block AND its language is unambiguously English).
+Then ask exactly **one** `AskUserQuestion` call:
 
-Otherwise, run **one** `AskUserQuestion` call with up to 4 questions:
+- **`Apply changes`** — `Apply (Recommended)` / `Adjust — describe what to change` / `Cancel`.
+- Add to the **same call** one question per essential value that could not be detected (typically the verification command) — max 4 questions total. Never ask about a value that was detected: it is visible in the diff and fixable via `Adjust`.
+- Answers collected in this round are substituted into the block before the Step 4 write; no second preview is needed unless the user picked `Adjust`.
 
-1. **`Output language`** — present the detected language as `(Recommended)`, plus `English`, `French` (skip whichever is the recommended one), and `Other` (auto). Phrase: "Render the conventions block in which language?"
-2. **`Existing block`** (only if our block was detected at Step 1.6) — `Replace (Recommended)` / `Merge into existing` / `Keep both side by side` / `Skip — leave existing alone`.
-3. **For each overlapping section detected at Step 1.4** (up to 2 in this call to leave room for Q1 and Q2) — phrase: "Existing `## <heading>` overlaps with our `<our-section>`. What should we do?". Options: `Merge content (Recommended)` / `Replace existing with ours` / `Keep both` / `Skip ours — keep existing only`.
+If `Adjust`: regenerate per the user's notes, show the new diff, ask again. Cap at 3 loops.
+If `Cancel`: exit without writing anything.
 
-If more than 2 overlapping sections were detected, run a **second** `AskUserQuestion` call right after the first to cover the rest. Group up to 4 overlap questions per call. Stop calling once all overlaps are addressed.
+### Step 4 — Write
 
-If the user picks `Skip` for the existing-block question, abort the skill with a one-line message.
+One write, no partial states:
 
-If the user picks `Skip ours` for every overlap and there is no non-overlapping section to add, abort with: "All sections of the conventions block are already covered by your existing CLAUDE.md. Nothing to add."
+- **No `CLAUDE.md`** — create it: `# <project-name>` (from the manifest, else the directory name), blank line, the marked block.
+- **Markers present** — replace strictly between `<!-- rocket:conventions:start -->` and `<!-- rocket:conventions:end -->`.
+- **Legacy block, no markers** — replace from the `## Project conventions` heading to the next `##` heading or EOF with the marked block.
+- **Neither** — insert the marked block per the [Insertion point rules](#insertion-point-rules).
 
-### Step 4 — Round 1 essentials
+If the write fails midway, abort with a clear error; never leave a half-updated file.
 
-One `AskUserQuestion` call with 4 questions. For each detected value, put it as the first option labelled `(Recommended)`. The free-text "Other" option is added automatically by the tool — do not add it manually.
+### Step 5 — Summary
 
-1. **`Stack summary`** — present the detected language + framework as Recommended. Two-three alternatives covering common stacks.
-2. **`Verify cmd`** — present detected `check`/`test` script(s) as Recommended. If multiple were detected, list each as a separate option (max 4).
-3. **`Typing rules`** — `Strict (Recommended)` / `Loose` / `Not applicable` (untyped language).
-4. **`Background context`** — "Enable automatic background context updates? When enabled, a lightweight classifier runs after each assistant turn and updates the project lexicon (`.roc/rocket/lexicon.md`) when new domain concepts appear. This has a small token cost (~$0.10-0.15 per 2-hour session). You can always run `/rocket:context-update` manually regardless of this setting." Options: `Disabled (Recommended)` / `Enabled`.
-5. **`Optional sections`** — `multiSelect: true`. Options: `Logging & observability` / `Error handling philosophy` / `Naming and structure` / `Async control flow`.
+Under 10 lines, no emojis: path written; action (created / updated / no-op); output language; sections included and omitted (with why); each detected value with its source; user lines preserved over detection; any `<TO FILL: ...>` placeholder remaining for manual review.
 
-Mandatory sections (Stack, Verification command, What NOT to do) are always written and not listed in question 5. Sections marked `Skip ours` at Step 3 are dropped here too.
+## Rules
 
-### Step 5 — Round 2 conditional
-
-For each section the user ticked in Round 1.5 AND that was not marked `Skip ours` at Step 3, ask the corresponding question. Batch in one `AskUserQuestion` call (up to 4 questions). Skip the entire step if no questions accumulate.
-
-- **Logging & observability** — `Logger`: ask for the logger library or wrapper file path. Use the value extracted from existing CLAUDE.md (Step 1.5) as Recommended if available.
-- **Error handling philosophy** — `Error policy`: `Standard (Recommended)` (default rules) / `Custom` (user provides their own).
-- **Naming and structure** — two questions: `File naming` (kebab/camel/snake/Pascal — pick stack-appropriate as Recommended) and `Tests location`.
-- **Async control flow** — `Async rules`: `Standard (Recommended)` ("No `await` inside `for` loops...") / `Custom`.
-
-If more than 4 questions accumulate, split into two calls.
-
-### Step 6 — Compose and translate
-
-Internal composition is in English using the [Template](#template) and the [Semantic context template](#semantic-context-template). All composition happens here so that Step 7 previews — and Step 8 writes — the complete final state in a single pass.
-
-1. **Substitute placeholders** — replace every `<TO FILL: ...>` in the conventions template with the chosen answer or detected value.
-2. **Drop sections** — remove `### <section>` blocks that the user did not select at Round 1.4 OR that were marked `Skip ours` at Step 3.
-3. **Apply Loose / Not applicable typing variants** — see [Typing rule variants](#typing-rule-variants).
-4. **Decide on the semantic context block**:
-   - If the existing CLAUDE.md already contains a block with equivalent semantic intent (heading like "Project semantic context", "Contexte sémantique du projet", "Lexicon", or any heading whose body references `.roc/rocket/lexicon.md`): drop the semantic context template — it is already there.
-   - Otherwise: keep it; it will be inserted right after the conventions block.
-5. **Decide on lexicon file creation**:
-   - If `.roc/rocket/lexicon.md` already exists: no action.
-   - Otherwise: schedule its creation (Step 8 will create the `.roc/rocket/` directory if missing and write the file).
-6. **Translate** — if the target language from Step 3 is not English, translate both blocks (conventions + semantic context, when scheduled): prose, headings, bullets. Keep code blocks, file paths, command lines, and proper nouns untranslated. See [Section translation hints](#section-translation-hints) for canonical heading translations.
-7. **Adapt tone** — match the existing CLAUDE.md's voice per [Style adaptation guidelines](#style-adaptation-guidelines). If no existing CLAUDE.md, use a terse imperative voice as default.
-8. **Apply merges** — for any overlapping section marked `Merge content`, write a merged version that keeps the existing content's wording and adds the missing facts from our template, in the existing language and tone.
-
-### Step 7 — Preview and confirm
-
-Compute the unified diff of all approved changes:
-
-- **`CLAUDE.md`** — a creation diff if absent, otherwise a unified diff (3 lines of context) showing additions, replacements, and deletions across the file. The diff covers BOTH the conventions block AND the semantic context block insertion when scheduled at Step 6.4.
-- **`.roc/rocket/lexicon.md`** — a one-line creation note appended after the diff if scheduled at Step 6.5, e.g. `+ Will create .roc/rocket/lexicon.md (auto-maintained header only)`. Skip this line if the file already exists.
-
-Show the diff to the user wrapped in a fenced ```` ```diff ```` block, followed by the lexicon-creation note when applicable, then run **one** `AskUserQuestion` call with a single question:
-
-- **`Apply changes`** — `Apply (Recommended)` / `Adjust — let me describe what to change` / `Cancel`.
-
-If `Adjust`: ask the user (free-text via the auto-Other) what to change, regenerate the rendered state per their notes, show the new diff, ask again. Cap at 3 adjustment loops to prevent runaway.
-
-If `Cancel`: exit without writing. Neither `CLAUDE.md` nor `.roc/rocket/lexicon.md` is touched.
-
-### Step 8 — Write
-
-Apply all approved changes in a single pass. Both `CLAUDE.md` insertion and the lexicon bootstrap (when scheduled) happen here so that there is no half-updated state if any single operation fails.
-
-**`CLAUDE.md` write** — exactly one write, containing both the conventions block and the semantic context block (when scheduled at Step 6.4). Insertion logic for the conventions block:
-
-- **No `CLAUDE.md`** — create it with `# <project-name>` (from `package.json#name` / `pyproject.toml#project.name` / cwd directory name as fallback), one blank line, the conventions block, one blank line, the semantic context block (when scheduled).
-- **Existing block detected, action `Replace`** — replace from the heading line of `## Project conventions` (or legacy `## Project conventions (read by`) up to the next `##` heading or EOF, with the new conventions block. The semantic context block (when scheduled) goes right after, separated by a blank line.
-- **Existing block detected, action `Merge into existing`** — replace as above with the merged content. Same handling for the semantic context block.
-- **Existing block detected, action `Keep both`** — insert the new conventions block right after the existing one with one blank line separator. The semantic context block (when scheduled) goes after the new conventions block.
-- **Per-section overlap actions** — apply each independently at the location of the existing overlapping section.
-- **No overlap, no existing block** — pick the insertion point per [Insertion point rules](#insertion-point-rules). The semantic context block (when scheduled) goes right after the conventions block.
-
-**Lexicon bootstrap** — only when scheduled at Step 6.5:
-
-1. Create the `.roc/rocket/` directory if missing.
-2. Write `.roc/rocket/lexicon.md` with exactly this single line (no other content):
-
-   ```
-   <!-- Auto-maintained by rocket:context-update. Edits are preserved when consistent. -->
-   ```
-
-   The file is then maintained by `rocket:context-update`.
-
-### Step 9 — Summary
-
-Output a short summary, under 12 lines, no emojis:
-
-- Path written.
-- Action taken (created / updated / merged).
-- Output language used.
-- Sections included, sections skipped (with why).
-- Overlap resolutions applied.
-- Detected values that were accepted as-is.
-- Whether `.roc/rocket/lexicon.md` was created or already existed, and whether the `## Project semantic context` block was inserted or already present.
-- Any `<TO FILL: ...>` placeholder still in the file that the user should review manually.
-
-## Style adaptation guidelines
-
-When an existing CLAUDE.md is present, the rendered block must blend in. Detect and match:
-
-- **Voice**: imperative ("Use X."), second person ("You should use X."), or declarative ("X is used."). Extract the dominant pattern from the existing prose's H2 sections and match it. If absent, default to imperative.
-- **Sentence length**: count average words per sentence in the existing prose. Match within ±25%. Existing terse → keep ours terse. Existing verbose → allow more elaboration.
-- **Bullet density**: existing short bullets (5-12 words) → keep ours short. Existing long bullets (20+ words) → allow ours to be richer.
-- **Heading case**: title case (`Verification Command`) vs sentence case (`Verification command`). Match the existing convention.
-- **Technical density**: if the existing prose is plain-language and avoids jargon, soften ours. If it is dense and technical, keep ours dense.
-- **Typography**: detect dashes (`-` vs `—`), quote style (`"` vs `“`), spacing around colons. Match.
-
-If multiple signals disagree (e.g. some sections are imperative, others declarative), pick whichever is dominant in **content** sections (Tests, Stack, Conventions) rather than in **meta** sections (Contributing, License, Credits). When in doubt, ask: "Which voice should I match?" via a brief `AskUserQuestion` — but only if the disagreement is genuine, not for minor variation.
-
-## Section translation hints
-
-Canonical heading translations (composed in English internally; rendered in the target language):
-
-| English                       | French                              |
-| :---------------------------- | :---------------------------------- |
-| Project conventions           | Conventions du projet               |
-| Stack                         | Stack                               |
-| Verification command          | Commande de vérification            |
-| Typing rules                  | Règles de typage                    |
-| Error handling philosophy     | Gestion des erreurs                 |
-| Logging & observability       | Logging & observabilité             |
-| Naming and structure          | Nommage et structure                |
-| Async control flow            | Asynchrone et concurrence           |
-| What NOT to do                | Ce qu'il ne faut PAS faire          |
-| Project semantic context      | Contexte sémantique du projet       |
-
-For other languages, translate naturally — do not transliterate. Code blocks, file paths, command lines, library names, and proper nouns stay in their original form.
-
-## Insertion point rules
-
-Used at Step 8 when there is no existing block and no per-section overlap to honor.
-
-1. Look for a "metadata" `##` section near the end of the file. Match by semantic intent (any language): License / Licence, References / Références, See also / Voir aussi, Contributing / Contribution, Credits / Crédits, Acknowledgments / Remerciements, Authors / Auteurs.
-2. If found within the last 5 H2 sections of the file → insert the new block **before** the first such section, with a blank line separator on each side.
-3. Otherwise → append at the end of the file with a blank line separator before it.
+1. **Do NOT** execute any project command during detection. Read files only.
+2. **Do NOT** invent values. Undetectable essentials are asked in the single Step 3 round; anything else stays as a `<TO FILL: ...>` placeholder flagged in the summary.
+3. **Do NOT** modify anything outside the managed region (except creating the file and inserting the marker pair on first run).
+4. **Do NOT** write before the user has approved the diff.
+5. The nominal flow costs exactly **one** `AskUserQuestion` call.
 
 ## Template
 
-The text between `=== TEMPLATE START ===` and `=== TEMPLATE END ===` is the literal English block to compose internally. Substitute every `<TO FILL: ...>` placeholder. Triple backticks inside the template are part of the output. Translate at Step 6 if the target language is not English.
+The text between `=== TEMPLATE START ===` and `=== TEMPLATE END ===` is the literal English block to compose internally, markers included. Substitute every `<TO FILL: ...>` placeholder. Triple backticks inside the template are part of the output. Translate at Step 2.4 if the target language is not English.
 
 === TEMPLATE START ===
+<!-- rocket:conventions:start -->
 ## Project conventions
 
 <!-- Read by rocket:spec-maker, rocket:spec-writer -->
@@ -204,7 +105,6 @@ The text between `=== TEMPLATE START ===` and `=== TEMPLATE END ===` is the lite
 - Runtime / framework: <TO FILL: runtime + framework>
 - Package manager: <TO FILL: pnpm / yarn 4 / npm / uv / poetry / cargo / go modules / ...>
 - Test framework: <TO FILL: Jest / Vitest / pytest / go test / cargo test / ...>
-- Background context: <TO FILL: enabled / disabled>
 
 ### Verification command
 
@@ -253,33 +153,51 @@ If it fails, fix the underlying issue. Never bypass it (no `--no-verify`, no rul
 - Do not validate scenarios that cannot occur (trust framework guarantees and internal callers).
 - Do not write comments that restate what the code does — only comments that explain non-obvious *why*.
 - Do not create README/docs files unless the user asks.
+<!-- rocket:conventions:end -->
 === TEMPLATE END ===
-
-## Semantic context template
-
-Used at Step 6 (compose) and inserted in `CLAUDE.md` at Step 8 when scheduled. Compose internally in English; translate per Step 6.6 if the target language is not English. The link target `.roc/rocket/lexicon.md` and the path inside the link text stay untranslated.
-
-=== SEMANTIC CONTEXT TEMPLATE START ===
-## Project semantic context
-
-Project-specific concepts, vocabulary, patterns, and decisions are documented in [`.roc/rocket/lexicon.md`](.roc/rocket/lexicon.md). Agents read this file before generating specs, plans, or implementations and align their vocabulary on it. The file is auto-maintained by `rocket:context-update`; manual edits are preserved when consistent.
-=== SEMANTIC CONTEXT TEMPLATE END ===
 
 ## Typing rule variants
 
-If the user picks `Loose` typing in Round 1.3, replace the bullets of `### Typing rules` with:
+Loose variant (when the existing CLAUDE.md or the lint config explicitly allows `any`-like escapes):
 
 - The `any` type (or equivalent) is allowed only at boundaries that are explicitly typed at the next layer. No inline lint disables.
 - All identifiers, comments, and strings are written in English regardless of conversation language.
 
-If the user picks `Not applicable`, drop the entire `### Typing rules` section.
+Untyped language: drop the entire `### Typing rules` section.
 
-## Rules
+## Style adaptation guidelines
 
-1. **Do NOT** run any command from `package.json#scripts` or other manifests during detection. Read files only.
-2. **Do NOT** invent values. If a detection signal is missing, ask the user.
-3. **Do NOT** add a section that the user did not request, or that was marked `Skip ours` at Step 3.
-4. **Do NOT** modify any file other than `CLAUDE.md` and (only as the Step 8 lexicon bootstrap) `.roc/rocket/lexicon.md`.
-5. **Do NOT** write to `CLAUDE.md` or `.roc/rocket/lexicon.md` before the user has approved the diff at Step 7.
-6. The whole flow should complete in 2 to 4 `AskUserQuestion` calls for typical cases. Do not chain unnecessary confirmations.
-7. If `CLAUDE.md` resolution fails midway (file becomes unreadable, parsing breaks), abort with a clear error message rather than partial writes.
+When an existing CLAUDE.md is present, the rendered block must blend in. Detect and match:
+
+- **Voice**: imperative ("Use X."), second person ("You should use X."), or declarative ("X is used."). Match the dominant pattern of the existing content sections; default to imperative.
+- **Sentence length and bullet density**: terse stays terse, verbose may elaborate. Match within reason.
+- **Heading case**: title case (`Verification Command`) vs sentence case (`Verification command`). Match the existing convention.
+- **Typography**: dashes (`-` vs `—`), quote style, spacing around colons. Match.
+
+If signals disagree, follow the dominant pattern of **content** sections (Stack, Tests, Conventions) rather than **meta** sections (License, Contributing).
+
+## Section translation hints
+
+Composed in English internally; rendered in the target language. Code blocks, file paths, command lines, library names, and proper nouns stay untranslated.
+
+| English                   | French                     |
+| :------------------------ | :------------------------- |
+| Project conventions       | Conventions du projet      |
+| Stack                     | Stack                      |
+| Verification command      | Commande de vérification   |
+| Typing rules              | Règles de typage           |
+| Error handling philosophy | Gestion des erreurs        |
+| Logging & observability   | Logging & observabilité    |
+| Naming and structure      | Nommage et structure       |
+| Async control flow        | Asynchrone et concurrence  |
+| What NOT to do            | Ce qu'il ne faut PAS faire |
+
+For other languages, translate naturally — do not transliterate. The marker comments stay in English verbatim.
+
+## Insertion point rules
+
+Used at Step 4 when the file exists with neither markers nor a legacy block:
+
+1. Look for a "metadata" `##` section near the end of the file (semantic match, any language: License, References, See also, Contributing, Credits, Acknowledgments, Authors).
+2. If found within the last 5 H2 sections → insert the marked block **before** the first such section, with a blank line on each side.
+3. Otherwise → append at the end of the file with a blank line before it.

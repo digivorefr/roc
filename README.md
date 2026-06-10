@@ -2,8 +2,8 @@
 
 A Claude Code marketplace bundling AI-assisted development plugins. Currently ships two plugins:
 
-- **Rocket 🚀** — stack-agnostic skills and agents that help a senior developer write specs, implement them, review changes, produce commit and PR messages, maintain a per-project semantic lexicon, and reset it on demand.
-- **my-hand 🖐** — personal-expression toolkit: reMarkable page capture, Gmail inbox watcher, and voice-grounded reply drafts. macOS-arm64 only; sanctioned non-portability exception per the repo's authoring rules.
+- **Rocket 🚀** — stack-agnostic skills and agents that help a senior developer write specs, implement them, review changes, and produce commit and PR messages.
+- **my-hand 🖐** — personal-expression toolkit: reMarkable page capture, email voice profile, and voice-grounded Gmail reply drafts. macOS-arm64 only; sanctioned non-portability exception per the repo's authoring rules.
 
 Rocket is opinionated: each project that uses it should declare its own test command, stack conventions, and quality gates in its `CLAUDE.md` so the agents read them instead of carrying hardcoded assumptions. Run [`/rocket:setup`](#rocketsetup) to bootstrap that block interactively.
 
@@ -50,18 +50,21 @@ Proposes 3 inline commit messages from the current diff.
 
 - `/rocket:commit-writer`
 - `/rocket:commit-writer only for these files: ...`
+- `/rocket:commit-writer rebase` — pick which commits since the default branch (plus uncommitted changes) define the scope; useful before a squash or rebase.
 
 #### `/rocket:pr-writer`
 
-Proposes a structured, product-focused PR description organised by topic, ready to copy-paste.
+Proposes a structured, product-focused PR description organised by topic, ready to copy-paste. Capped at 1-3 topics and ~30 lines.
 
 - `/rocket:pr-writer`
+- `/rocket:pr-writer rebase` — same commit picker as commit-writer.
 
 #### `/rocket:review`
 
 Reviews uncommitted/unpushed changes against six criteria: DRY, contiguous patterns, integration with existing conventions, test coverage, dead code, documentation drift. Produces a structured report.
 
 - `/rocket:review`
+- `/rocket:review rebase` — same commit picker as commit-writer.
 
 #### `/rocket:myself`
 
@@ -79,38 +82,9 @@ Forces a chat-only response. The agent will not create, edit, or delete any file
 
 Manual-only — never auto-triggered.
 
-#### `/rocket:context-update`
-
-Updates the project's semantic lexicon at `.roc/rocket/lexicon.md` from the current conversation. The lexicon is a compact catalog of project-specific concepts, vocabulary, patterns, and decisions, read by `rocket:spec-writer` and `rocket:spec-maker` to align their vocabulary with yours.
-
-- `/rocket:context-update`
-
-Auto-triggered by Claude when a major semantic shift just happened in the conversation. Also auto-runs in the background after every assistant turn via a `Stop` hook (asynchronous, non-blocking), gated by a multi-stage pipeline that reduces background cost by ~95%:
-
-1. **Per-project toggle** — requires `- Background context: enabled` in the `### Stack` section of the project's `CLAUDE.md`. Disabled by default; opt in via [`/rocket:setup`](#rocketsetup) or manual edit.
-2. **Debounce** — skips if the lexicon was updated within the last 300 s.
-3. **Heuristic pre-filter** — the `context-gate` binary rejects tool-only turns and short turns (<5 content lines), eliminating ~90% of fires at zero LLM cost.
-4. **Haiku gate** — a minimal Haiku classifier (~800 tokens) checks whether the delta introduces new domain concepts. Rejects ~80% of remaining fires.
-5. **Scoped Sonnet writer** — only the ~2% of turns that pass all gates trigger a Sonnet subprocess, and with a focused prompt (~5K tokens) instead of the full 500-line transcript tail.
-
-Manual invocation (`/rocket:context-update`) bypasses the toggle, heuristic, and Haiku gate — it runs the full Sonnet workflow directly.
-
-Logs land in `.roc/rocket/lexicon-update.log` (rotated at 1 MB, last 3 kept). Cursor state is tracked in `.roc/rocket/context-gate-state.json` (gitignored). Bootstrap the lexicon and the `## Project semantic context` reference in `CLAUDE.md` by running [`/rocket:setup`](#rocketsetup).
-
-The lexicon is a flat catalog of `## <Area>` sections (e.g. Domain, Architecture, Roles, Conventions, Decisions) containing `### <Concept>` entries. Each entry has exactly four bullets — `Definition`, `Aliases`, `Relations`, `Source` — and stays compact (cap: 300 lines or 12 KB, whichever smaller). Manual edits are preserved when consistent; contradictions are flagged with a `<!-- TODO -->` comment for human review.
-
-#### `/rocket:context-clear`
-
-Wipes the project's rocket-managed contextualization files under `.roc/rocket/` (lexicon, logs, lock dirs, leftover temp files). Two-step: list, then delete with `force`.
-
-- `/rocket:context-clear` — list mode (no deletion).
-- `/rocket:context-clear force` — actually delete.
-
-Manual-only — never auto-triggered. Scoped to the current project; user-global state under `~/.roc/...` is not touched. The `## Project semantic context` block in `CLAUDE.md` is preserved; remove it manually if you also want to reset that.
-
 #### `/rocket:setup`
 
-Initializes or refreshes the `## Project conventions` block in the current project's `CLAUDE.md`. Auto-detects stack signals from manifests (`package.json`, `pyproject.toml`, lockfiles, etc.), asks a few questions to fill the rest, then writes the block. Creates `CLAUDE.md` if it does not exist.
+Initializes or refreshes the `## Project conventions` block in the current project's `CLAUDE.md`. Detects stack signals from manifests, lockfiles, CI workflows, and lint configs, composes the complete block, then asks for a single confirmation before writing. The block is delimited by `<!-- rocket:conventions:start/end -->` markers, so re-running anytime is safe: only the managed region is ever touched. Creates `CLAUDE.md` if it does not exist.
 
 - `/rocket:setup`
 
@@ -118,26 +92,25 @@ Manual-only — never auto-triggered. The block it writes is consumed by `rocket
 
 ## my-hand 🖐
 
-A personal-expression toolkit. Two cooperating but independent feature sets, both **macOS-arm64 only**:
+A personal-expression toolkit. Two independent feature sets, both **macOS-arm64 only**:
 
 - **reMarkable page capture** — pull the current page of a reMarkable 2 notebook over USB into the model as a 1404×1872 multimodal image.
-- **Gmail inbox watcher with voice-grounded reply drafts** — distill the user's email voice from sent Gmail, periodically poll the inbox in a dedicated mail-session conversation, suggest 2-4 sentence replies in that voice, and on demand finalize a Gmail draft inside the existing thread. Drafts are never sent.
+- **Voice-grounded Gmail reply drafts** — distill the user's email voice from sent Gmail, then on demand finalize a Gmail draft inside an existing thread, in that voice. Drafts are never sent.
 
 ### Slash commands
 
 - `/my-hand:remarkable-grab [notebook-name]` — capture a notebook page (list mode if no name).
 - `/my-hand:tone-profile` — distill the user's email voice into `~/.roc/my-hand/tone.md`.
-- `/my-hand:inbox-watch start | stop | tick` — manage the Gmail mail-session loop.
-- `/my-hand:inbox-reply <sender or subject keyword>` — finalize a Gmail draft inside the existing thread.
+- `/my-hand:inbox-reply <sender or subject keyword>` — finalize a Gmail draft inside the existing thread, asking you first for the answers the reply needs.
 
 ### Prerequisites
 
 - **macOS-arm64.** Linux, Intel Mac, and Windows are out of scope.
 - For the reMarkable feature: a **reMarkable 2** tablet (firmware 3.x+), plugged in over USB, screen unlocked, and **USB web interface** enabled (`Settings → Storage → USB web interface`). The device must answer at `http://10.11.99.1`.
-- For the Gmail feature: a **Gmail MCP server** installed and bound on the host, exposing `search_threads`, `get_thread`, `create_draft`. `osascript` (default on macOS) for banner notifications.
-- **No runtime dependencies.** Ships self-contained binaries (~17 MB for the reMarkable pipeline, ~7 MB for the inbox poller); no Python or Homebrew needed at runtime.
+- For the Gmail feature: a **Gmail MCP server** installed and bound on the host, exposing `search_threads`, `get_thread`, `create_draft`.
+- **No runtime dependencies.** Ships a self-contained binary (~17 MB for the reMarkable pipeline); no Python or Homebrew needed at runtime.
 
-See [`plugins/my-hand/README.md`](plugins/my-hand/README.md) for the rendering pipeline, the mail-session flow, troubleshooting, and what is intentionally deferred.
+See [`plugins/my-hand/README.md`](plugins/my-hand/README.md) for the rendering pipeline, troubleshooting, and what is intentionally deferred.
 
 ## Trigger language
 

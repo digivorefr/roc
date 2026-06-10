@@ -8,7 +8,7 @@ A Claude Code **marketplace** named `roc` (displayed as **Roc**). It currently d
 
 `rocket` ships a curated set of skills and agents for assisted development; every skill and agent here is meant to be **stack-agnostic** and reused across multiple codebases.
 
-`my-hand` ships four slash commands (`/my-hand:remarkable-grab`, `/my-hand:tone-profile`, `/my-hand:inbox-watch`, `/my-hand:inbox-reply`), one forked skill (`inbox-watch-tick`), one `SessionStart` hook, and two compiled binaries (reMarkable capture pipeline and inbox poller). It is the first sanctioned exception to the stack-agnostic rule (see Hard rule 4) on two grounds: it depends on local hardware (reMarkable tablet over USB) **and** on a per-user Gmail MCP server.
+`my-hand` ships three slash commands (`/my-hand:remarkable-grab`, `/my-hand:tone-profile`, `/my-hand:inbox-reply`) and one compiled binary (reMarkable capture pipeline). It is the first sanctioned exception to the stack-agnostic rule (see Hard rule 4) on two grounds: it depends on local hardware (reMarkable tablet over USB) **and** on a per-user Gmail MCP server.
 
 Each consumer project declares its own stack-specific conventions (test command, typing rules, error-handling style) in its own `CLAUDE.md`. The conventions block is generated interactively by the [`/rocket:setup`](plugins/rocket/skills/setup/SKILL.md) skill — its template is the source of truth. The plugins read those rules instead of carrying their own.
 
@@ -30,11 +30,11 @@ README.md                           Public documentation (install, list of plugi
 CLAUDE.md                           This file — maintainer guide
 ```
 
-A plugin uses whichever of `agents/`, `skills/`, `commands/`, `hooks/`, `bin/`, `build/` it needs — none are mandatory. `rocket` uses `agents/`, `skills/`, `hooks/`, `bin/`, `build/`. `my-hand` uses `commands/`, `skills/`, `hooks/`, `bin/darwin-arm64/`, `build/`.
+A plugin uses whichever of `agents/`, `skills/`, `commands/`, `hooks/`, `bin/`, `build/` it needs — none are mandatory. `rocket` uses `agents/` and `skills/`. `my-hand` uses `commands/`, `bin/darwin-arm64/`, `build/`.
 
 Currently there are two plugins: `plugins/rocket/` and `plugins/my-hand/`. Add a sibling directory under `plugins/` to ship a new plugin and register it in `marketplace.json#plugins`.
 
-Both plugins now have compiled binaries: `my-hand` ships two (`my-hand-grab`, `inbox-poll`) at `bin/darwin-arm64/` (macOS-arm64 only), and `rocket` ships one (`context-gate`) at `bin/` (platform-independent, no native deps). Build scripts live at `plugins/<plugin>/build/build.sh`.
+`my-hand` ships one compiled binary (`my-hand-grab`) at `bin/darwin-arm64/` (macOS-arm64 only), built by `plugins/my-hand/build/build.sh`.
 
 The conventions block template lives inside [`plugins/rocket/skills/setup/SKILL.md`](plugins/rocket/skills/setup/SKILL.md) (between `=== TEMPLATE START ===` and `=== TEMPLATE END ===`). It is the single source of truth — edit it there.
 
@@ -95,7 +95,7 @@ disable-model-invocation: true   # Only if the skill is manual-only (e.g. /rocke
 - **`name`**: lowercase, hyphens, max 64 chars. Match the directory name.
 - **`description`**: third person, max 1024 chars. Two questions to answer: *what does this skill do?* and *when should Claude invoke it?* Front-load the trigger keywords (`/<plugin>:<name>` first, then natural-language patterns in EN and FR). **Do NOT summarize the workflow in the description** — Claude may follow the description instead of reading the body.
 - **`disable-model-invocation: true`**: add this only if the skill must be triggered explicitly by the user (e.g. modal skills like `/rocket:myself`, `/rocket:no-code`). The default — auto-invocation by Claude — is preferred for most skills.
-- **`context: fork`** + **`agent: <name>`**: make the skill execute in a forked subagent with an isolated context. Use these for skills that must analyse the conversation in the background without blocking the main turn (e.g. `context-update`). The `agent` field picks the subagent type to run inside (`general-purpose`, `Explore`, or any custom subagent).
+- Avoid **`context: fork`**: a forked skill does **not** see the conversation history (documented limitation), so any skill whose job involves the current conversation must run in the main context.
 - Do **not** set `user-invocable: true`. It is the default and adds noise.
 
 ### Body rules
@@ -107,6 +107,7 @@ disable-model-invocation: true   # Only if the skill is manual-only (e.g. /rocke
 - End with concrete `## Good examples` and `## Bad examples` if output format matters (commit messages, PR descriptions). Examples beat descriptions.
 - Match degrees of freedom to fragility: rigid workflow (commit-writer, pr-writer, review) → numbered steps and explicit constraints; modal/judgment skill (myself, no-code) → principles and a single illustrative example.
 - No time-sensitive content. No "as of 2026". No magic numbers without justification.
+- The `rebase` scope-selection procedure is intentionally duplicated verbatim in `commit-writer`, `pr-writer`, and `review` (plugins have no include mechanism). When editing it, apply the same change to all three.
 
 ### Description examples (from this repo)
 
@@ -139,7 +140,6 @@ color: <visual hint>
 - Body opens with a role statement, then sections like `## Core Philosophy`, `## Workflow`, `## What You Must NOT Do`.
 - An agent that implements features (`spec-maker`) must read the consumer's `CLAUDE.md` for stack rules and use the verification command declared there.
 - An agent that produces documents (`spec-writer`) must defer stack rules to the consumer's `CLAUDE.md` rather than restating them.
-- `spec-maker` and `spec-writer` share an identical Step 0 (`Read .roc/rocket/lexicon.md if it exists...`). When changing it in one agent, apply the same change to the other to prevent drift.
 
 ## Authoring a new slash command
 
@@ -183,12 +183,12 @@ allowed-tools:
 
 ## State location convention
 
-**Never store plugin state under `.claude/` (project-local) or `~/.claude/` (user-global).** Claude Code's harness treats anything under those prefixes as sensitive and refuses to grant a permanent "always allow" on Bash, Read, Write, or Edit operations targeting them — breaking silent automation (every poll, every save prompts the user).
+**Never store plugin state under `.claude/` (project-local) or `~/.claude/` (user-global).** Claude Code's harness treats anything under those prefixes as sensitive and refuses to grant a permanent "always allow" on Bash, Read, Write, or Edit operations targeting them — breaking unattended flows (every read/write prompts the user).
 
 Use this layout instead:
 
-- **User-global state** → `~/.roc/<plugin-name>/`. Survives across projects and sessions. Examples: `~/.roc/my-hand/tone.md`, `~/.roc/my-hand/inbox-state.json`.
-- **Project-local state** → `<project>/.roc/<plugin-name>/`. Scoped to the working tree, can be committed selectively. Examples: `<project>/.roc/rocket/lexicon.md` (committed), `<project>/.roc/rocket/lexicon-update.log` (gitignored), `<project>/.roc/rocket/lexicon.md.lock.d/` (gitignored).
+- **User-global state** → `~/.roc/<plugin-name>/`. Survives across projects and sessions. Example: `~/.roc/my-hand/tone.md`.
+- **Project-local state** → `<project>/.roc/<plugin-name>/`. Scoped to the working tree, can be committed selectively (commit durable artifacts, gitignore logs and locks).
 
 The `.claude/` directory remains exclusively for Claude Code's own state (plugin manifest cache, settings.local.json) and the user's personal overrides (`CLAUDE.local.md`, `settings.local.json`). Plugins never write there.
 
@@ -201,6 +201,7 @@ The `.claude/` directory remains exclusively for Claude Code's own state (plugin
 5. Run `/reload-plugins` between edits — no need to restart.
 6. To validate the marketplace itself end-to-end, run `/plugin marketplace add .` then `/plugin install <plugin>@roc`.
 
+<!-- rocket:conventions:start -->
 ## Project conventions
 
 <!-- Read by rocket:spec-maker, rocket:spec-writer -->
@@ -211,7 +212,6 @@ The `.claude/` directory remains exclusively for Claude Code's own state (plugin
 - Runtime / framework: PyInstaller for compiled binaries, Claude Code plugin harness
 - Package manager: none (pip inside ephemeral venvs during builds only)
 - Test framework: none (manual validation)
-- Background context: enabled
 
 ### Verification command
 
@@ -221,6 +221,7 @@ There is no automated verification command. Validation is manual:
 2. Exercise each modified skill via its slash command or natural-language trigger.
 3. For agents, invoke via the `Task` tool.
 4. Run `/reload-plugins` between edits.
+<!-- rocket:conventions:end -->
 
 ## What NOT to do
 
@@ -254,7 +255,3 @@ Keep entries terse. If a section grows past ~40 lines, split it into a file unde
 - [Plugins guide](https://code.claude.com/docs/en/plugins)
 - [Plugin marketplaces](https://code.claude.com/docs/en/plugin-marketplaces)
 - [CLAUDE.md memory guide](https://code.claude.com/docs/en/memory)
-
-## Project semantic context
-
-Project-specific concepts, vocabulary, patterns, and decisions are documented in [`.roc/rocket/lexicon.md`](.roc/rocket/lexicon.md). Agents read this file before generating specs, plans, or implementations and align their vocabulary on it. The file is auto-maintained by `rocket:context-update`; manual edits are preserved when consistent.

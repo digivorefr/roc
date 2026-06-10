@@ -9,7 +9,7 @@
     {
       "name": "rocket",
       "source": "./plugins/rocket",
-      "description": "Rocket 🚀 — skills (commit-writer, pr-writer, review, setup, myself, no-code, context-update, context-clear) and agents (spec-writer, spec-maker) for senior-developer-assisted workflows",
+      "description": "Rocket 🚀 — skills (commit-writer, pr-writer, review, setup, myself, no-code) and agents (spec-writer, spec-maker) for senior-developer-assisted workflows",
       "author": {
         "name": "Pierre Bonnin",
         "email": "hello@digivore.fr"
@@ -28,7 +28,7 @@
     {
       "name": "my-hand",
       "source": "./plugins/my-hand",
-      "description": "my-hand — personal-expression toolkit for Claude Code: reMarkable page capture and Gmail inbox watcher with voice-grounded reply drafts (macOS-arm64)",
+      "description": "my-hand — personal-expression toolkit for Claude Code: reMarkable page capture, email voice profile, and voice-grounded Gmail reply drafts (macOS-arm64)",
       "author": {
         "name": "Pierre Bonnin",
         "email": "hello@digivore.fr"
@@ -42,7 +42,6 @@
         "multimodal",
         "macos",
         "gmail",
-        "inbox",
         "drafts",
         "voice-profile"
       ]

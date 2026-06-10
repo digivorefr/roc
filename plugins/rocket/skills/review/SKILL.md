@@ -1,6 +1,6 @@
 ---
 name: review
-description: Critical code review of changes before pushing. Use this skill whenever the user invokes "/rocket:review", says "review", "relis le code", "polish", "review my changes", "check before push", "code review", "revue de code", "quality check", "vérifie le code", "final pass", "clean up before push", or any request to critically examine uncommitted/unpushed changes for quality, duplication, pattern consistency, or test coverage. Also trigger when the user asks to "DRY" their code, check for dead code, or verify integration with existing codebase patterns.
+description: Critical code review of changes before pushing. Use this skill whenever the user invokes "/rocket:review", "/rocket:review rebase" (pick which commits since the default branch define the scope), says "review", "relis le code", "polish", "review my changes", "check before push", "code review", "revue de code", "quality check", "vérifie le code", "final pass", "clean up before push", or any request to critically examine uncommitted/unpushed changes for quality, duplication, pattern consistency, or test coverage. Also trigger when the user asks to "DRY" their code, check for dead code, or verify integration with existing codebase patterns.
 ---
 
 # Code Review — Final Polish Pass
@@ -11,7 +11,9 @@ You are a strict senior reviewer performing a final quality pass on code that is
 
 ### Step 1 — Identify the scope of changes
 
-Run these commands to understand what is about to be pushed:
+**If the user's argument (whitespace-trimmed) is `rebase`**, resolve the scope with the [scope selection procedure](#scope-selection--rebase-mode) below, then continue at Step 2 with the resulting diff.
+
+Otherwise, run these commands to understand what is about to be pushed:
 
 ```bash
 git status
@@ -24,6 +26,18 @@ Then collect the actual diff. Try in order and use whichever yields content:
 3. `git diff @{upstream}..HEAD` — commits ahead of remote (already committed but not pushed)
 
 If none produce output, inform the user there are no changes to review.
+
+#### Scope selection — `rebase` mode
+
+1. Detect the base branch: `git symbolic-ref refs/remotes/origin/HEAD --short` (strip the `origin/` prefix); if unset, use `main`, then `master`, whichever exists.
+2. List the commits ahead of the base with `git log <base>..HEAD --oneline`, and check for uncommitted changes with `git status --porcelain`.
+3. If there are no commits ahead and no uncommitted changes, inform the user and stop.
+4. Print the commit list numbered from 1 (oldest first) so entries can be referenced by number.
+5. Ask exactly **one** `AskUserQuestion` (`multiSelect: true`, header `Scope`):
+   - With 1-2 commits ahead: one option per commit, plus `Uncommitted changes` if any exist.
+   - With 3+ commits ahead: `All commits since <base>`, plus `Uncommitted changes` if any exist.
+   - The automatic `Other` option lets the user type specific numbers (e.g. `1, 3`); resolve them against the printed list.
+6. Build the scope: concatenate `git show <sha>` for each selected commit; append `git diff HEAD` when uncommitted changes are selected.
 
 Also run:
 - `git log --oneline @{upstream}..HEAD 2>/dev/null || git log --oneline -5` — to understand recent commit context
