@@ -5,85 +5,54 @@ description: Generate a structured, English, product-focused PR description orga
 
 # PR Description Writer
 
-Produce a **structured, English, product-focused** pull request description organised by topic. The audience is a reviewer who wants to understand what problem each change solves and how, in under a minute.
-
-The description is composed of one or more `### <Topic>` blocks. Each block follows a fixed three-part shape: a short context paragraph, a list of intent bullets, and a list of technical-change bullets. Topics are independent — one per distinct concern in the PR.
+Produce a **structured, English, product-focused** PR description organised by topic. The reviewer must understand what problem each change solves and how, in under a minute.
 
 ## Output contract
 
-- **Format**: a single markdown code block containing the description, ready to copy-paste into a GitHub PR body.
-- **Language**: English.
-- **Tone**: product-first for context and intent, technical for the change list.
-- **Global budget**: 1-3 topics for a typical PR; more than 3 only when the PR genuinely ships independent features. The whole description stays under **30 lines**. When in doubt, merge topics — two changes serving one reviewable intent are one topic. The reviewer reads this in under a minute; every line beyond the budget works against that.
-- **Heading depth**: only `###` headings, one per topic. No `##` parent, no `####` children. Flat list of topics.
-- **Block shape**: each topic block is exactly three parts separated by a single blank line — context paragraph, intent bullets, change bullets. No labels between them; the reader infers from position and content style.
+- **Format**: a single markdown code block, ready to paste into a GitHub PR body. No preamble, no commentary around it.
+- **Language**: English. Product-first for context and intent, technical for changes.
+- **Budget**: 1-2 topics for a typical PR; more only when the PR genuinely ships independent features. Whole description ≤ **15 lines** including blanks. When in doubt, merge topics.
+- **Headings**: only `### <Topic>`, one per topic — a short noun phrase (4-7 words) naming the area or behaviour.
+- **Block shape**: three parts separated by single blank lines — context sentence, intent bullet(s), change bullet(s). No labels; the reader infers from position.
 
 ## Topic block shape
 
 ```
 ### <Topic>
-<context paragraph>
+<context sentence>
 
 - <intent bullet>
-- <intent bullet>
 
-- <change bullet>
 - <change bullet>
 ```
 
-### Context paragraph
+- **Context** — one sentence: what was happening, to whom, why it mattered. Product framing; no file paths, symbols, or library names.
+- **Intent** — one bullet: the decision in product/operator terms. A second only if dropping it loses a reviewer-relevant decision.
+- **Change** — one dense bullet naming the mechanism: merge related facts with parentheses instead of adding bullets. A second only if dropping it loses a reviewer-relevant mechanism. Module-level concepts allowed ("the webhook handler"); file paths not.
 
-- **One sentence preferred**, two only if the second adds critical context the reviewer cannot infer.
-- Follow the chain `situation → action → consequence → problem` compressed into the available sentence(s). The reader needs to know what was happening, what broke, and to whom.
-- Product framing — describe what was happening to users, operators, or the system as a whole. Do not describe the code.
-- No file paths, no symbol names, no library names.
+## Hard rules
 
-### Intent bullets (block 2)
-
-- **Default 2 bullets, maximum 3** — use the third only when dropping it loses a reviewer-relevant decision. Pick the most important; drop the rest.
-- Each bullet is **one short clause** (≤140 chars), one logical decision, phrased in product/functional terms.
-- No compound bullets: do not chain ideas with "and", semicolons, or em-dashes that hide a second decision. Split or drop.
-- Vocabulary stays close to the user/operator/system perspective. No file paths, no function names, no library specifics.
-
-### Change bullets (block 3)
-
-- **Default 2 bullets, maximum 3** — use the third only when dropping it loses a reviewer-relevant mechanism. Merge small changes under a single bullet rather than expanding.
-- Each bullet is **one short clause** (≤140 chars) naming a single mechanism, switch, dependency, or contract change.
-- May reference module-level concepts (e.g. "the queue worker", "the webhook handler") but **not** individual file paths.
-- Skip incidental edits (typos, formatting, dependency bumps unless they matter).
-- If the PR is purely a refactor with no observable change, describe what moved and why the new structure is better — still capped at 3 bullets.
-
-## Hard rules — what NOT to include
-
-- Do NOT include a "Test plan" section. Ever.
-- Do NOT add any heading other than `### <Topic>`. No `## Summary`, no sub-headings, no labels like `**Context:**` or `**How:**`.
-- Do NOT list every touched file or produce a file-by-file changelog.
-- Do NOT include "Out of scope / follow-ups" unless the user explicitly asks for it.
-- Do NOT include emojis.
-- Do NOT include boilerplate like "this PR does X, Y, Z" — go straight into the first topic.
-- Do NOT merge unrelated changes into a single topic, and do NOT split one logical change across multiple topics.
-- Do NOT exceed 3 bullets in any single block. If you have more, you have not picked the most important — collapse or drop.
-- Do NOT chain multiple ideas inside one bullet. One bullet, one idea, one short clause.
+- Density beats enumeration: one dense bullet over two sparse ones.
+- No "Test plan", ever. No emojis. No heading other than `### <Topic>`, no labels like `**Context:**`.
+- No file-by-file changelog; skip incidental edits (typos, formatting, irrelevant bumps).
+- No "Out of scope / follow-ups" unless explicitly asked.
+- One topic per independent concern: never merge unrelated changes, never split one concern. Two changes belong together if removing one forces reworking the other.
 
 ## Workflow
 
 ### Step 1 — Gather context
 
-Three cases:
+**Case A — the argument is `rebase`**: resolve the scope with the [scope selection procedure](#scope-selection--rebase-mode) below, then continue at Step 2 with the resulting diff.
 
-**Case A: the argument is `rebase`**
-- Resolve the scope with the [scope selection procedure](#scope-selection--rebase-mode) below, then continue at Step 2 with the resulting diff.
+**Case B — context provided by the user** (a diff, a description, a spec, previous session content): use it directly. Do NOT run git commands.
 
-**Case B: context provided by the user** (they pasted a diff, a description, a spec, or previous session content)
-- Use that context directly. Do NOT run git commands.
+**Case C — no argument, no context**: run in order, use whichever yields content:
 
-**Case C: no argument, no context provided**
-- Run these in order, use whichever yields content:
-  1. `git diff HEAD` (staged + unstaged vs HEAD)
-  2. `git diff --cached` (staged only)
-  3. `git diff @{upstream}..HEAD` (commits ahead of remote)
-- Also run `git log --oneline @{upstream}..HEAD 2>/dev/null || git log --oneline -5` for commit context.
-- If nothing yields output, tell the user no changes are detected and ask for context.
+1. `git diff HEAD` (staged + unstaged vs HEAD)
+2. `git diff --cached` (staged only)
+3. `git diff @{upstream}..HEAD` (commits ahead of remote)
+
+Also run `git log --oneline @{upstream}..HEAD 2>/dev/null || git log --oneline -5` for commit context. If nothing yields output, tell the user no changes are detected and ask for context.
 
 ### Scope selection — `rebase` mode
 
@@ -97,72 +66,41 @@ Three cases:
    - The automatic `Other` option lets the user type specific numbers (e.g. `1, 3`); resolve them against the printed list.
 6. Build the scope: concatenate `git show <sha>` for each selected commit; append `git diff HEAD` when uncommitted changes are selected.
 
-### Step 2 — Identify topics
+### Step 2 — Write
 
-Read the diff and group the changes into independent **topics**. A topic is a coherent concern that a reviewer can evaluate on its own merits.
-
-- One topic per independent concern → one `### <Topic>` block.
-- Two changes belong to the same topic if removing one would force the other to be reworked. Otherwise they are separate topics.
-- Refactor PRs may be a single topic. Multi-feature PRs almost always split into several.
-- The `<Topic>` title is a short noun phrase (4-7 words), naming the area or behaviour. Not a sentence, no verb in -ing form unless natural.
-
-### Step 3 — Write each topic block
-
-For each topic, produce the three parts in order:
-
-1. **Context** — compress the `situation → action → consequence → problem` chain into one sentence (two only if essential). Stop the moment the reader understands why the change matters.
-2. **Intent bullets** — at most 3, prefer 2. One short clause per bullet, one decision per bullet, product/operator perspective.
-3. **Change bullets** — at most 3, prefer 2-3. One short clause per bullet naming one mechanism or contract change. Group small tweaks under a single bullet; never pad.
-
-If you have genuine doubt about the product angle of a topic (e.g. the diff is purely internal refactoring with no user-visible impact), ask the user one short clarifying question before writing that block. Do NOT invent a product framing.
-
-### Step 4 — Output
-
-Return **only** the markdown code block. No preamble, no commentary around it. The user copy-pastes it as-is.
+1. Group the changes into topics, one per independent concern.
+2. For each topic: context sentence, intent bullet, change bullet — per the contract above.
+3. If the product angle of a topic is genuinely unclear, ask one short question instead of inventing a framing. For a pure refactor, describe what moved and why the new structure is better.
+4. Return **only** the markdown code block.
 
 ## Good example
 
-Input: connector was creating duplicate cases on Fasap when MerciYanis retried outbound webhooks against a slow target; implementation added idempotence check and switched to async HTTP response.
-
-Output:
-
 ````md
 ```md
-### Outbound webhook idempotence on Fasap
+### Read depth for nested relations
 
-Webhook retries on slow Fasap calls produced duplicate cases that operators had to deduplicate by hand every morning.
+Read endpoints capped expansion at depth 1, forcing extra calls to resolve nested resources.
 
-- Outbound cases are now processed at most once on Fasap, eliminating the daily manual deduplication
-- The webhook handler stops the upstream retry storm by acking 200 as soon as the message is accepted
+- Nested relations come back populated in a single call
 
-- Added an idempotence key per `(case_id, target_system)` in Redis, 7-day TTL
-- Webhook handler now acks 200 synchronously and enqueues processing as a background job
-- Logged an idempotence-skip line so support can confirm which retries were absorbed
+- Raised `maximumDepth` per route (2-4 depending on the resource), tests aligned
 
-### File upload queue isolation
+### Per-request overrides in the Postman collection
 
-A stalled upload could block the shared case-event queue for up to 90 seconds, breaking the SLA on unrelated time-sensitive events.
+Overriding one request's id meant editing a shared collection variable, impacting every request.
 
-- A slow upload no longer delays unrelated events
-- Upload ordering is preserved within the dedicated queue (FIFO per case)
+- Any request can target a different id without touching shared variables
 
-- Introduced a dedicated upload worker fed by its own RabbitMQ queue
-- The case-success handler now enqueues an upload job instead of running it inline
-- Added per-queue depth metrics so the slowdown is visible before it impacts the SLA
+- Path segments use Postman path variables, each defaulting to the matching collection variable
 ```
 ````
 
-(The outer ``` ```md ``` fences are just to make this example readable inside this skill file. The actual output is a single ```md...``` code block.)
+(The outer fences make the example readable here; the actual output is a single ```md...``` block.)
 
 ## Bad examples (do not produce these)
 
-- A description with a `## Summary` heading or any heading deeper than `###`.
-- A description with labels like `**Context:**` / `**Solution:**` / `**Changes:**` between blocks.
-- A context paragraph that lists file paths, function names, or library specifics.
-- An intent bullet that says `Refactored X to use Y` — that's a change bullet, not an intent.
-- A change bullet that says `Modified user.service.ts and updated user.controller.ts` — file paths leak into the description.
-- A description with a "Test plan" section.
-- A topic merging two unrelated concerns into one block, or splitting one concern across two blocks.
-- Padding bullets to look more thorough. If one intent bullet covers everything, ship one.
-- A bullet that runs to two or three lines because it joins multiple ideas with "and"/";"/em-dashes — the reader skims, the second idea is lost.
-- Four or more bullets in a single block — that's a sign you have not picked the most important.
+- Two or three sparse bullets where one dense bullet carries the facts.
+- A `## Summary` heading, labels like `**Context:**`, or a "Test plan" section.
+- A context sentence or intent bullet naming file paths, function names, or library specifics.
+- An intent bullet like `Refactored X to use Y` — that is a change, not an intent.
+- Padding a block to look thorough: if one bullet covers it, ship one.

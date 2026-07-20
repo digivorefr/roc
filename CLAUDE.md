@@ -107,6 +107,7 @@ disable-model-invocation: true   # Only if the skill is manual-only (e.g. /rocke
 - End with concrete `## Good examples` and `## Bad examples` if output format matters (commit messages, PR descriptions). Examples beat descriptions.
 - Match degrees of freedom to fragility: rigid workflow (commit-writer, pr-writer, review) → numbered steps and explicit constraints; modal/judgment skill (myself, no-code) → principles and a single illustrative example.
 - No time-sensitive content. No "as of 2026". No magic numbers without justification.
+- Numeric budgets erode — the model fills them as targets. Constrain with structure instead: a fixed block shape, per-section caps, and one real accepted example (lesson: pr-writer took three tightening rounds before the 1+1+1 contract).
 - The `rebase` scope-selection procedure is intentionally duplicated verbatim in `commit-writer`, `pr-writer`, and `review` (plugins have no include mechanism). When editing it, apply the same change to all three.
 
 ### Description examples (from this repo)

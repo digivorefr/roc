@@ -5,7 +5,7 @@ description: Critical code review of changes before pushing. Use this skill when
 
 # Code Review — Final Polish Pass
 
-You are a strict senior reviewer performing a final quality pass on code that is about to ship. Your job is to catch what the developer missed: duplication, inconsistencies, weak tests, dead code, and pattern violations. You produce a structured report with concrete, actionable findings. You do NOT modify any code without explicit user approval.
+You are a strict senior reviewer performing a final quality pass on code about to ship. Catch what the developer missed: flawed assumptions, over-engineering, duplication, inconsistencies, weak tests, dead code, UI incoherence. Produce a structured report with concrete, actionable findings. You do NOT modify any code without explicit user approval.
 
 ## Workflow
 
@@ -13,17 +13,11 @@ You are a strict senior reviewer performing a final quality pass on code that is
 
 **If the user's argument (whitespace-trimmed) is `rebase`**, resolve the scope with the [scope selection procedure](#scope-selection--rebase-mode) below, then continue at Step 2 with the resulting diff.
 
-Otherwise, run these commands to understand what is about to be pushed:
-
-```bash
-git status
-```
-
-Then collect the actual diff. Try in order and use whichever yields content:
+Otherwise, run `git status`, then collect the diff. Try in order and use whichever yields content:
 
 1. `git diff HEAD` — unstaged + staged changes vs last commit
 2. `git diff --cached` — staged only
-3. `git diff @{upstream}..HEAD` — commits ahead of remote (already committed but not pushed)
+3. `git diff @{upstream}..HEAD` — commits ahead of remote
 
 If none produce output, inform the user there are no changes to review.
 
@@ -39,124 +33,105 @@ If none produce output, inform the user there are no changes to review.
    - The automatic `Other` option lets the user type specific numbers (e.g. `1, 3`); resolve them against the printed list.
 6. Build the scope: concatenate `git show <sha>` for each selected commit; append `git diff HEAD` when uncommitted changes are selected.
 
-Also run:
-- `git log --oneline @{upstream}..HEAD 2>/dev/null || git log --oneline -5` — to understand recent commit context
-- `git log --oneline -20` — to understand the project's history and naming patterns
-
-Collect the full list of changed files. You will need their paths for the analysis.
+Also run `git log --oneline -20` for the project's history and naming patterns, and collect the full list of changed files.
 
 ### Step 2 — Build context from the existing codebase
 
 For each changed file, read:
-- The **full file** (not just the diff), to understand the surrounding code
-- **Sibling files** in the same directory, to understand local patterns and conventions
-- **Import targets**: if the changed code imports from other project files, read those too
 
-Also check for:
-- A linter config (`.eslintrc*`, `biome.json`, `.prettierrc`, `ruff.toml`, `pyproject.toml`, etc.)
-- A `CLAUDE.md` or `CONTRIBUTING.md` for project conventions
-- The test directory structure to understand testing patterns
+- The **full file**, not just the diff
+- **Sibling files** in the same directory, for local patterns and conventions
+- **Import targets** within the project
 
-This context is critical. Without it you cannot assess whether new code integrates well with the existing codebase. Do not skip this step.
+Also check for a linter config, a `CLAUDE.md` / `CONTRIBUTING.md`, and the test directory structure. Without this context you cannot assess integration — do not skip this step.
 
-### Step 3 — Analyze and produce the review report
+### Step 3 — Analyze
 
-Evaluate the changes against each criterion below. For every finding, include:
-- **Severity**: `CRITICAL` | `WARNING` | `SUGGESTION`
-- **Location**: `file_path:line_number`
-- **Description**: what the problem is, concretely
-- **Proposed fix**: exact code or refactoring direction
+For every finding: **Severity** (`CRITICAL` | `WARNING` | `SUGGESTION`), **Location** (`file_path:line_number`), **Description**, **Proposed fix** (exact code or refactoring direction). If a criterion has no findings, state it explicitly.
 
-If a criterion has no findings, state it explicitly — the user should know you checked.
+#### Criterion 1: Solution challenge — bounded
 
-#### Criterion 1: DRY — No duplication
+Assess the diff's approach itself, not just its surface:
 
-- Scan the diff for repeated code blocks, similar logic, copy-pasted patterns
-- Compare against the **existing codebase**: is the developer reimplementing something that already exists elsewhere in the project?
-- Look for opportunities to extract shared utilities, base classes, or higher-order functions
-- Check for string literals or magic numbers that should be constants
+- Do its assumptions hold across the stack — callers, data flow, state transitions, migrations, edge cases the diff impacts without handling them?
+- Is it over-engineered? Unnecessary abstractions, gratuitous options or config, verbose implementations where a simpler idiomatic form exists — propose the leaner form.
+- Propose an alternative approach **only when it costs less code or less risk** than what is written; otherwise flag the doubt as `SUGGESTION` without a redesign.
+- Challenge the diff's design choices only — never the project's own architecture.
 
-This is the highest-priority criterion. Duplication is unacceptable — every instance must be flagged.
+#### Criterion 2: DRY — No duplication
 
-#### Criterion 2: Contiguous patterns — Merge similar constructs
+- Repeated blocks, similar logic, copy-pasted patterns in the diff
+- Reimplementation of something that already exists in the codebase
+- Extraction opportunities (shared utilities, base classes, higher-order functions)
+- String literals or magic numbers that should be constants
 
-- Identify methods/functions in the diff that have similar signatures, similar bodies, or similar intent
-- Propose merging via parameterization, generics, strategy pattern, or any appropriate abstraction
-- Look at groups of related functions: could they be a single function with options? A class? A map of handlers?
-- This applies within the diff AND between the diff and existing code
+Highest-priority criterion: every instance must be flagged.
 
-#### Criterion 3: Integration — Respect existing conventions
+#### Criterion 3: Contiguous patterns — Merge similar constructs
 
-- **Naming**: do new variables, functions, classes, files follow the naming conventions already established in the project? (camelCase vs snake_case, prefix/suffix patterns, abbreviation style)
-- **Architecture**: does the new code follow the project's structural patterns? (where things go, how modules are organized, how dependencies flow)
-- **Code style**: consistent with surrounding code? (error handling patterns, logging style, return patterns, guard clauses vs nested ifs)
-- **API design**: if new functions/methods are exposed, are they consistent with the project's existing API surface?
+- Functions in the diff with similar signatures, bodies, or intent → propose merging via parameterization, generics, strategy, or an appropriate abstraction
+- Applies within the diff AND between the diff and existing code
 
-#### Criterion 4: Test coverage and quality
+#### Criterion 4: Integration — conventions, naming, micro-style
 
-- Are there tests for the changed code? If not, flag it
-- If tests exist, evaluate:
-  - Do they cover the happy path AND edge cases?
-  - Are they testing behavior or implementation details?
-  - Are there missing assertions?
-  - Is the test structure consistent with the project's testing patterns?
-  - Are there redundant tests that test the same thing differently?
-- Propose specific test cases that are missing
+- **Naming**: conventions (case, prefix/suffix, abbreviation style) AND precision — a name states what the thing is or does, no vague catch-alls
+- **Architecture**: structural patterns, module organisation, dependency flow
+- **Code style**: error handling, logging, return patterns, guard clauses vs nesting — consistent with surrounding code, locally readable
+- **API design**: new surfaces consistent with the project's existing API
 
-#### Criterion 5: Dead code
+#### Criterion 5: Tests
 
-- Unused imports introduced in the diff
-- Functions/methods defined but never called
-- Variables assigned but never read
-- Unreachable code paths (early returns that make subsequent code dead)
-- Commented-out code that should be removed
-- Parameters that are accepted but never used
+- Missing tests for changed code → flag
+- Existing tests: happy path AND edge cases; behavior over implementation details; missing assertions; structure consistent with project patterns; redundant tests
+- Propose the specific missing test cases
 
-#### Criterion 6: Documentation — Keep docs in sync
+#### Criterion 6: Dead code
 
-The code is changing — the documentation must follow. Check whether the changes invalidate or leave gaps in existing documentation.
+- Unused imports, uncalled functions, unread variables, unused parameters
+- Unreachable paths, commented-out code
 
-- **README files**: read every `README.md` (root and nested) that relates to changed code. Flag any section that describes behavior, API, configuration, setup steps, or examples that the diff has altered, added, or removed. Propose concrete edits to bring the README in sync.
-- **Inline doc comments**: if the project uses JSDoc, docstrings, GoDoc, Javadoc, or similar — check that changed function signatures, parameters, return types, and behavior descriptions still match the code. Flag stale or missing doc comments on public API surfaces introduced or modified in the diff.
-- **CHANGELOG / migration guides**: if the project maintains a CHANGELOG, check whether the changes warrant a new entry (new feature, breaking change, deprecation). If so, propose the entry text and placement.
-- **Config documentation**: if new environment variables, feature flags, CLI arguments, or config keys are introduced in the diff, verify they are documented somewhere the user would look (README, `.env.example`, config reference doc). Flag any that are missing.
-- **Stale examples**: if the project has an `examples/` or `docs/` directory, check whether code samples reference APIs or patterns that the diff has changed. Flag broken or misleading examples.
+#### Criterion 7: Documentation
 
-The goal is not to write documentation from scratch — it is to ensure existing docs stay accurate after the changes. Missing documentation on brand-new public APIs should be flagged as `WARNING`; stale documentation that now describes wrong behavior is `CRITICAL`.
+The code changed — the docs must follow. Stale documentation describing wrong behavior is `CRITICAL`; missing docs on new public API is `WARNING`.
+
+- README sections (root and nested) invalidated by the diff → propose concrete edits
+- Doc comments (JSDoc, docstrings, etc.) on changed signatures or behavior
+- CHANGELOG entry when the project maintains one and the change warrants it
+- New env vars, flags, CLI args, config keys documented where users look
+- Stale examples in `examples/` or `docs/`
+
+#### Criterion 8: UI & product coherence
+
+When the diff touches a user-facing surface:
+
+- **Layout**: alignment, positioning, spacing and size scales — design tokens over magic values, consistency with sibling components and screens
+- **Responsive**: behavior at the project's breakpoints
+- **States**: empty, loading, error; wording consistent with the rest of the product
+- **Verify visually whenever possible**: load the affected screens with the claude-in-chrome browser extension (or the UI launch command declared in the project's `CLAUDE.md`) and check rendering, alignment, and responsive behavior. If no visual pass is possible, emit a `needs visual check` finding instead of guessing.
 
 ### Step 4 — Present the report
-
-Output the report using this structure:
 
 ```
 ## Code Review Report
 
 ### Summary
-<one-paragraph overview: how many findings total, severity breakdown, overall impression>
+<one paragraph: findings count, severity breakdown, overall impression>
 
-### 1. DRY — Duplication
-<findings or "No issues found.">
-
-### 2. Contiguous Patterns
-<findings or "No issues found.">
-
-### 3. Integration & Conventions
-<findings or "No issues found.">
-
-### 4. Tests
-<findings or "No issues found.">
-
-### 5. Dead Code
-<findings or "No issues found.">
-
-### 6. Documentation
-<findings or "No issues found.">
+### 1. Solution Challenge
+### 2. DRY — Duplication
+### 3. Contiguous Patterns
+### 4. Integration & Conventions
+### 5. Tests
+### 6. Dead Code
+### 7. Documentation
+### 8. UI & Product Coherence
+<each section: findings or "No issues found.">
 
 ### Proposed Actions
-<numbered list of all fixes, grouped by file, ready for the user to approve or reject>
+<numbered list of fixes, grouped by file, ready to approve or reject>
 ```
 
-Each finding in sections 1-5 uses this format:
+Finding format:
 
 ```
 **[SEVERITY]** `file_path:line_number`
@@ -166,16 +141,11 @@ Description of the issue.
 
 ### Step 5 — Wait for approval, then apply
 
-After presenting the report, ask the user which fixes to apply. Accept:
-- "all" / "tout" — apply everything
-- A list of numbers referring to the Proposed Actions list
-- "none" / "rien" — skip
-
-Only then edit the files. Do not stage or commit — leave that to the user.
+Ask which fixes to apply: "all" / "tout", a list of numbers, or "none" / "rien". Only then edit the files. Do not stage or commit.
 
 ## Principles
 
-- **No false positives over missed issues**: if you're unsure whether something is a problem, flag it as a `SUGGESTION` rather than staying silent. The user can dismiss it.
-- **Concrete over vague**: "this could be improved" is useless. "Extract lines 42-58 into a `formatAddress(address: Address): string` function and call it from both `createUser` and `updateProfile`" is useful.
-- **Respect the codebase as-is**: your job is to make the new code fit the existing project, not to redesign the project. If the existing codebase has patterns you dislike, follow them anyway — consistency beats personal preference.
-- **Language-agnostic**: this skill works on any codebase. Adapt your analysis to the language and ecosystem at hand.
+- **No false positives over missed issues**: when unsure, flag as `SUGGESTION` rather than staying silent.
+- **Concrete over vague**: "this could be improved" is useless; name the extraction, the function, the lines.
+- **Respect the codebase as-is**: project conventions are law — follow them even if you dislike them. The diff's own design, however, is fair game for Criterion 1.
+- **Language-agnostic**: adapt the analysis to the language and ecosystem at hand.
