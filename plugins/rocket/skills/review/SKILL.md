@@ -54,6 +54,7 @@ For every finding: **Severity** (`CRITICAL` | `WARNING` | `SUGGESTION`), **Locat
 Assess the diff's approach itself, not just its surface:
 
 - Do its assumptions hold across the stack — callers, data flow, state transitions, migrations, edge cases the diff impacts without handling them?
+- Are rights and lifecycles complete — who may perform each exposed action; what happens on update and delete, and what cascades to other resources?
 - Is it over-engineered? Unnecessary abstractions, gratuitous options or config, verbose implementations where a simpler idiomatic form exists — propose the leaner form.
 - Propose an alternative approach **only when it costs less code or less risk** than what is written; otherwise flag the doubt as `SUGGESTION` without a redesign.
 - Challenge the diff's design choices only — never the project's own architecture.
