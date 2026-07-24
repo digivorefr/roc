@@ -24,6 +24,7 @@ Read the project's `CLAUDE.md` (root and nested) before writing. Reference its r
 Write exclusively in English. Sections in order, with hard caps — local caps constrain, a global budget does not:
 
 - `Problem` (≤10 lines) — what hurts, for whom, why now.
+- `Done means` (bullets only) — the acceptance oracle. Each bullet: one user-observable outcome, binary pass/fail, verifiable without the judgment of whoever produced the work. Reduced to its essence — instantly readable by a human, nothing superfluous; this minimalism weighs as much as verifiability. No vague words ("properly", "gracefully"), no implementation detail, no paraphrase of `Contracts`: `Done means` is the destination, `Contracts` the exhaustive map.
 - `Solution` (≤30 lines) — the approach and why it wins; state what is NOT built.
 - `Alternatives considered` (≤10 lines) — one line each: option → why rejected. Mandatory whenever a non-obvious choice is made; include the cheapest circumvention path even when rejected.
 - `Contracts` — data models as tables with meaningful columns (name, type, required, constraints), behavior invariants as one-line causal bullets ("changing X resets Y"). Definitions only, never implementations.
@@ -39,10 +40,12 @@ A typical feature spec lands around 80 lines. Anything the implementer can infer
 1. Read the project's `CLAUDE.md`.
 2. Research the domain (Context7, web) and analyze existing code for patterns.
 3. Challenge the request; ask clarifying questions.
-4. Draft the foundation: data model(s) as a table, behavior invariants as one-line causal bullets, checked against the coverage axes. This becomes `Contracts`.
-5. Write the full spec against that foundation.
-6. **Polish pass** — re-read the complete document and fix in place:
+4. **Approval gate** — submit the proposed `Done means` alone and wait for explicit user approval. Write nothing else of the spec before it: the gate exists to align on a few lines before investing eighty. If later feedback changes scope, re-submit the revised `Done means` for approval before any other spec modification.
+5. Draft the foundation: data model(s) as a table, behavior invariants as one-line causal bullets, checked against the coverage axes. This becomes `Contracts`.
+6. Write the full spec against that foundation.
+7. **Polish pass** — re-read the complete document and fix in place:
    - every requirement implementable without an architectural decision;
+   - every `Done means` bullet observable and binary — one that self-grades, uses a vague word, restates a `Contracts` invariant, or carries anything superfluous is rewritten or cut;
    - no contradictions, no orphan references;
    - every remaining unknown listed in `Open questions` — none silently resolved;
    - cut everything the implementer can infer.
@@ -51,6 +54,7 @@ A typical feature spec lands around 80 lines. Anything the implementer can infer
 ## Quality criteria
 
 - A developer implements the feature without making architectural decisions.
+- `Done means` was approved before drafting started, and re-approved after every scope change.
 - The spec names existing code to reuse or copy.
 - Weaknesses of the proposal were challenged and alternatives surfaced, not transcribed.
 - Every section respects its cap; nothing inferable remains.

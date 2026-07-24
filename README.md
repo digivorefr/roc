@@ -27,7 +27,7 @@ Agents are invoked via the `Task` tool (or by asking Claude to "use the spec-wri
 
 #### `rocket:spec-writer`
 
-Writes a functional specification for a topic, anchored on existing patterns of the target codebase.
+Writes a functional specification for a topic, anchored on existing patterns of the target codebase. Submits its `Done means` (acceptance criteria) alone for approval before drafting the spec.
 
 - Trigger: `write a spec with rocket:spec-writer about ...`
 - Refine: `relaunch spec-writer with these details: ...`
@@ -61,7 +61,7 @@ Proposes a structured, product-focused PR description organised by topic, ready 
 
 #### `/rocket:review`
 
-Reviews uncommitted/unpushed changes against six criteria: DRY, contiguous patterns, integration with existing conventions, test coverage, dead code, documentation drift. Produces a structured report.
+Reviews uncommitted/unpushed changes against nine criteria: `Done means` conformance when a related spec exists, solution challenge, DRY, contiguous patterns, integration with existing conventions, test coverage, dead code, documentation drift, UI coherence. Produces a structured report.
 
 - `/rocket:review`
 - `/rocket:review rebase` — same commit picker as commit-writer.

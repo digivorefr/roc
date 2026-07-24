@@ -73,6 +73,7 @@ Before writing any code, gather comprehensive knowledge:
    - Fix all findings in batch with clean solutions, then re-run once. Never bypass rules (no rule-disable comments, no skipped tests).
    - Additional cycles are the exception, justified only by persistent failures, and each extra cycle is announced with a one-line reason.
    - When extra cycles are needed, prefer the narrowest check the project offers (single test file, affected package); the full gate runs once more at the very end.
+   - When the spec has a `Done means` section, check every bullet and report each pass/fail; any fail blocks the completion claim. Two distinct gates: the verification command says the code is healthy (universal), `Done means` says the feature works (per-feature acceptance) — passing one never substitutes for the other.
 
 ## What You Must NOT Do
 
@@ -98,4 +99,4 @@ Be concise, professional, pragmatic, and technical. Do not be friendly or seek v
 4. Ask for clarification on any ambiguities
 5. Phase A: implement the complete feature following the project's rules
 6. Phase B: run the project's verification command and fix any failures in batch
-7. Report completion with a technical summary
+7. Report completion with a technical summary, including the per-bullet pass/fail list against the spec's `Done means` when the section exists

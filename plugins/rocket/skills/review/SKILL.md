@@ -49,7 +49,15 @@ Also check for a linter config, a `CLAUDE.md` / `CONTRIBUTING.md`, and the test 
 
 For every finding: **Severity** (`CRITICAL` | `WARNING` | `SUGGESTION`), **Location** (`file_path:line_number`), **Description**, **Proposed fix** (exact code or refactoring direction). If a criterion has no findings, state it explicitly.
 
-#### Criterion 1: Solution challenge — bounded
+#### Criterion 1: `Done means` conformance
+
+When a related spec exists, confront the diff against its `Done means` bullets before anything else:
+
+- Spec discovery: a spec referenced in the conversation or the diff wins; otherwise scan the project's `specs/` directory (when present) for a spec whose topic matches the changed files; ambiguity → ask the user, never guess.
+- Report each bullet as **met** / **not met** / **not assessable from the diff**. A `not met` bullet is `CRITICAL`.
+- No related spec found → state "No related spec." and proceed with the remaining criteria.
+
+#### Criterion 2: Solution challenge — bounded
 
 Assess the diff's approach itself, not just its surface:
 
@@ -59,7 +67,7 @@ Assess the diff's approach itself, not just its surface:
 - Propose an alternative approach **only when it costs less code or less risk** than what is written; otherwise flag the doubt as `SUGGESTION` without a redesign.
 - Challenge the diff's design choices only — never the project's own architecture.
 
-#### Criterion 2: DRY — No duplication
+#### Criterion 3: DRY — No duplication
 
 - Repeated blocks, similar logic, copy-pasted patterns in the diff
 - Reimplementation of something that already exists in the codebase
@@ -68,30 +76,30 @@ Assess the diff's approach itself, not just its surface:
 
 Highest-priority criterion: every instance must be flagged.
 
-#### Criterion 3: Contiguous patterns — Merge similar constructs
+#### Criterion 4: Contiguous patterns — Merge similar constructs
 
 - Functions in the diff with similar signatures, bodies, or intent → propose merging via parameterization, generics, strategy, or an appropriate abstraction
 - Applies within the diff AND between the diff and existing code
 
-#### Criterion 4: Integration — conventions, naming, micro-style
+#### Criterion 5: Integration — conventions, naming, micro-style
 
 - **Naming**: conventions (case, prefix/suffix, abbreviation style) AND precision — a name states what the thing is or does, no vague catch-alls
 - **Architecture**: structural patterns, module organisation, dependency flow
 - **Code style**: error handling, logging, return patterns, guard clauses vs nesting — consistent with surrounding code, locally readable
 - **API design**: new surfaces consistent with the project's existing API
 
-#### Criterion 5: Tests
+#### Criterion 6: Tests
 
 - Missing tests for changed code → flag
 - Existing tests: happy path AND edge cases; behavior over implementation details; missing assertions; structure consistent with project patterns; redundant tests
 - Propose the specific missing test cases
 
-#### Criterion 6: Dead code
+#### Criterion 7: Dead code
 
 - Unused imports, uncalled functions, unread variables, unused parameters
 - Unreachable paths, commented-out code
 
-#### Criterion 7: Documentation
+#### Criterion 8: Documentation
 
 The code changed — the docs must follow. Stale documentation describing wrong behavior is `CRITICAL`; missing docs on new public API is `WARNING`.
 
@@ -101,7 +109,7 @@ The code changed — the docs must follow. Stale documentation describing wrong 
 - New env vars, flags, CLI args, config keys documented where users look
 - Stale examples in `examples/` or `docs/`
 
-#### Criterion 8: UI & product coherence
+#### Criterion 9: UI & product coherence
 
 When the diff touches a user-facing surface:
 
@@ -118,14 +126,15 @@ When the diff touches a user-facing surface:
 ### Summary
 <one paragraph: findings count, severity breakdown, overall impression>
 
-### 1. Solution Challenge
-### 2. DRY — Duplication
-### 3. Contiguous Patterns
-### 4. Integration & Conventions
-### 5. Tests
-### 6. Dead Code
-### 7. Documentation
-### 8. UI & Product Coherence
+### 1. Done Means Conformance
+### 2. Solution Challenge
+### 3. DRY — Duplication
+### 4. Contiguous Patterns
+### 5. Integration & Conventions
+### 6. Tests
+### 7. Dead Code
+### 8. Documentation
+### 9. UI & Product Coherence
 <each section: findings or "No issues found.">
 
 ### Proposed Actions
@@ -148,5 +157,5 @@ Ask which fixes to apply: "all" / "tout", a list of numbers, or "none" / "rien".
 
 - **No false positives over missed issues**: when unsure, flag as `SUGGESTION` rather than staying silent.
 - **Concrete over vague**: "this could be improved" is useless; name the extraction, the function, the lines.
-- **Respect the codebase as-is**: project conventions are law — follow them even if you dislike them. The diff's own design, however, is fair game for Criterion 1.
+- **Respect the codebase as-is**: project conventions are law — follow them even if you dislike them. The diff's own design, however, is fair game for Criterion 2.
 - **Language-agnostic**: adapt the analysis to the language and ecosystem at hand.

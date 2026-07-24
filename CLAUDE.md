@@ -25,7 +25,9 @@ plugins/<plugin-name>/
   bin/<platform>/                   Optional: compiled binaries (non-portable plugins, per Hard rule 4)
   build/                            Optional: maintainer build script and sources for the binary
   README.md                         Plugin-specific user-facing doc
-specs/                              Functional specs for plugins or features (one .md per topic/version)
+specs/                              Functional specs for plugins or features (one .md per topic/version);
+                                    each carries a `Done means` section (per-feature acceptance oracle,
+                                    user-approved before drafting — see spec-writer)
 README.md                           Public documentation (install, list of plugins/skills/agents)
 CLAUDE.md                           This file — maintainer guide
 ```
