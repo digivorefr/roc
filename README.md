@@ -31,12 +31,14 @@ Writes a functional specification for a topic, anchored on existing patterns of 
 
 - Trigger: `write a spec with rocket:spec-writer about ...`
 - Refine: `relaunch spec-writer with these details: ...`
+- Pipeline (orchestrators): prompt starting with `MODE: pipeline` + `ARTIFACT_PATH:` — first dispatch returns `POINTS` / `DELIVERABLE`, a resume with `FRAMING: done` writes the spec to the path; questions come back as `QUESTIONS` / `BLOCKERS`, never as a live question.
 
 #### `rocket:spec-maker`
 
 Implements a specification, plan, or detailed instructions autonomously, then runs the project's verification commands.
 
 - Trigger: `implement with rocket:spec-maker from specs/<file>.md`
+- Pipeline (orchestrators): prompt starting with `MODE: pipeline`, optional `COVERAGE_CMD:` / `SELF_CHECK_CMD:` slots — returns `SUMMARY`, `DEVIATIONS`, `CHANGED_FILES`, `PINNING`, `SELF_CHECK`, `EVIDENCE`, `QUESTIONS`, `BLOCKERS`.
 
 The agent expects project-specific conventions (test command, lint rules, error-handling style) to be declared in the project's `CLAUDE.md`. Run [`/rocket:setup`](#rocketsetup) to generate that block.
 
@@ -65,6 +67,16 @@ Reviews uncommitted/unpushed changes against nine criteria: `Done means` conform
 
 - `/rocket:review`
 - `/rocket:review rebase` — same commit picker as commit-writer.
+- Pipeline (orchestrators): prompt starting with `MODE: pipeline` + `BASE:` follows the self-contained [`pipeline.md`](plugins/rocket/skills/review/pipeline.md) contract — fixed scope, four criteria plus caller `DEFECT_CLASSES`, every finding with severity and confidence, no interaction.
+
+#### `/rocket:condense`
+
+Condenses a text, file, or conversation element into its essence without information loss: a few lines of essence, then bullets grouped by concept with causal links spelled out, then a set-apart loss-check block comparing input and output. Output in the language of the source. Auto-triggers on "shorten", "synthesize", "TL;DR", "fais plus court", "synthétise", "résume".
+
+- `/rocket:condense specs/<file>.md`
+- `/rocket:condense your last answer`
+- `/rocket:condense` — the last substantial output
+- `/rocket:condense --no-check <target>` — same, without the loss-check block (the check still gates delivery)
 
 #### `/rocket:myself`
 

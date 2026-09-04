@@ -74,7 +74,7 @@ A skill or agent that only works in one stack does not belong in this marketplac
 
 ### 3. English everywhere
 
-All identifiers, frontmatter, comments, and prose are in English. Skill descriptions may list French triggers as alternative keywords (the user base is bilingual), but skill output is always English.
+All identifiers, frontmatter, comments, and prose are in English. Skill descriptions may list French triggers as alternative keywords (the user base is bilingual), but skill output is always English. One exception: `condense` writes in the language of its source — a condensed French document stays French.
 
 ### 4. Exceptions to stack-agnosticism
 
