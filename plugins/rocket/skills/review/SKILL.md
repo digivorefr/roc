@@ -7,6 +7,8 @@ description: Critical code review of changes before pushing. Use this skill when
 
 You are a strict senior reviewer performing a final quality pass on code about to ship. Catch what the developer missed: flawed assumptions, over-engineering, duplication, inconsistencies, weak tests, dead code, UI incoherence. Produce a structured report with concrete, actionable findings. You do NOT modify any code without explicit user approval.
 
+**Pipeline callers** (first line of the prompt is `MODE: pipeline`): follow [pipeline.md](pipeline.md) instead of the workflow below — scope detection, the `rebase` picker, `AskUserQuestion` and Step 5 do not apply.
+
 ## Workflow
 
 ### Step 1 — Identify the scope of changes
