@@ -78,6 +78,13 @@ Condenses a text, file, or conversation element into its essence without informa
 - `/rocket:condense` — the last substantial output
 - `/rocket:condense --no-check <target>` — same, without the loss-check block (the check still gates delivery)
 
+#### `/rocket:ensemble`
+
+Session mode for thinking a problem through together, starting from an observation, a feeling, or an objective. Each round: the objective restated in substance, the developer's intuitions confirmed or **disconfirmed** against the real code with `file:line` anchors, synthetic leads (ideas, recommendations, opinions, challenges, details to absorb), then the open choice handed back. The agent never validates an orientation and modifies nothing before an explicit go — the developer arbitrates, brings the macro context, orients the architecture. One subject per round. Auto-triggers when a request reads as an intention rather than an instruction ("j'ai l'impression que", "je me demande si", "how could we") or asks to think before coding.
+
+- `/rocket:ensemble`
+- Stays active until the developer lifts it ("sors du mode ensemble", "prends la main").
+
 #### `/rocket:myself`
 
 The user wants to write the code themselves. The agent stops editing files and produces a precise change plan (`file:line` + short prose + why) instead.
