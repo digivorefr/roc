@@ -15,9 +15,9 @@ Before analysing, read: the full content of every changed file (not just the hun
 
 ## Criteria, in order
 
-**(a) Spec conformance** — every spec section and `Done means` bullet implemented; every deviation declared in the diff or the brief; nothing built beyond the spec; every file the spec names present. Each gap is `CRITICAL`. Report per section: met / not met / not assessable from the diff.
+**(a) Spec conformance** — every `Done means` bullet and `Decisions` line implemented; every part listed under `Where` reached, no behavior change in a part listed as unchanged; every deviation declared in the diff or the brief; nothing built beyond the spec. Each gap is `CRITICAL`. Report per `Done means` bullet, `Decisions` line and `Where` row: met / not met / not assessable from the diff.
 
-**(b) Pinning** — for each guard, condition or branch the diff adds, name the mutation (inverted condition, deleted branch, swapped operand) that the tests would not detect. A mutation detectable by simply deleting the code with tests still green is `CRITICAL`; a weaker one is `WARNING`. A pinned guard is stated as such (`no finding`).
+**(b) Tests** — each `Done means` bullet and each spec rule that changes observable behavior has a test that fails when that behavior breaks; a missing one is `WARNING`. Without a spec, the behavior the diff evidently adds is the reference. A test asserting a logging call, a query the code makes along the way, a constant value or internal structure — with no spec rule or project convention making it the behavior — is `WARNING`, fix: assert the observable outcome or delete the test. An uncovered line outside that behavior is not a finding, nor is the number of tests.
 
 **(c) Correctness challenge, bounded to the spec** — do the diff's assumptions hold across callers, data flow, state transitions, migrations and the edge cases it touches without handling them; are rights and lifecycles complete for what it exposes. Propose a redesign only when it costs less code or less risk than what is written. A finding that would extend or contradict the approved spec is `SUGGESTION` with class `correctness beyond-spec`, never `CRITICAL`. The same applies to redesign ideas carried by the brief (a prior reviewer's note, an open discussion): assess each one and report it as `SUGGESTION · correctness beyond-spec` with a one-line verdict — never `CRITICAL`, never dropped, never turned into a `QUESTIONS` item.
 
@@ -30,7 +30,7 @@ Before analysing, read: the full content of every changed file (not just the hun
 - Every finding carries `severity` (`CRITICAL` | `WARNING` | `SUGGESTION`) and `confidence` (`high` | `medium` | `low`). Report everything, including low-confidence items: the caller filters, and self-filtering lowers recall.
 - Every criterion and every defect class produces at least one line, `<class> · no finding` when clean.
 - Concrete over vague: `file:line`, what is wrong, the fix as an intent (what to change, not a patch).
-- `class` is one of `spec-conformance`, `pinning`, `correctness`, `correctness beyond-spec`, `consistency`, or the defect class name as given in the brief.
+- `class` is one of `spec-conformance`, `tests`, `correctness`, `correctness beyond-spec`, `consistency`, or the defect class name as given in the brief.
 
 ## Return
 
@@ -43,8 +43,8 @@ Flat markdown: each key on its own line as `KEY:`, bullets under it, no code fen
 Example:
 
 FINDINGS:
-- CRITICAL · high · src/services/export-csv.ts:1 · spec-conformance · spec section "Rate limiting" has no implementation and no declared deviation · fix: add the limiter named in the spec or declare the deviation
-- CRITICAL · high · src/services/export-csv.ts:42 · pinning · deleting the empty-selection guard keeps all tests green · fix: add a test asserting the empty-file response for an empty selection
+- CRITICAL · high · src/services/export-csv.ts:1 · spec-conformance · decision "exports are rate-limited per user" has no implementation and no declared deviation · fix: add the limiter or declare the deviation
+- WARNING · high · src/services/export-csv.test.ts:42 · tests · Done means "an empty selection downloads an empty file" has no test · fix: add a test asserting the empty-file response for an empty selection
 - SUGGESTION · medium · src/services/export-csv.ts:18 · correctness beyond-spec · streaming the rows would bound memory on large exports; the spec fixes an in-memory build · fix: raise as a follow-up card, not in this change
 - WARNING · high · src/services/export-csv.test.ts:30 · consistency · inline mock of the repository while `test/factories/repository.ts` exists · fix: use the factory
 - correctness · no finding

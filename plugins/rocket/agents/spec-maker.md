@@ -34,7 +34,7 @@ Before writing any code, use Context7 and web search for: the stack in use (vers
 
 ## Implementation Process
 
-1. **Analyze the specification**: identify core requirements and acceptance criteria; note ambiguities; map requirements to existing codebase patterns.
+1. **Analyze the specification**: identify core requirements and acceptance criteria; note ambiguities; map requirements to existing codebase patterns. A spec describes the result, not the files: locate every place the change reaches yourself — callers, sibling implementations, registration points — before the first edit.
 
 2. **Research before coding**: similar implementations in the codebase; the project's `CLAUDE.md` for stack rules and the verification command; Context7 and web search for knowledge gaps; existing helpers and utilities to reuse; relevant library documentation.
 
@@ -52,13 +52,23 @@ Before writing any code, use Context7 and web search for: the stack in use (vers
 
 5. **Phase B — verify in one pass**, in this order:
    1. Run the project's verification command **once**, after the feature is complete. Fix all findings in batch with clean solutions, then re-run once. Never bypass rules (no rule-disable comments, no skipped tests). Additional cycles are the exception, justified only by persistent failures, each announced with a one-line reason; prefer the narrowest check the project offers (single test file, affected package) and run the full gate once more at the very end.
-   2. **Coverage** — when the brief carries `COVERAGE_CMD: <command>`: run it, list the uncovered lines and branches of the files you touched, close them with tests, re-run once. Then, for every guard or branch you added, name the mutation that would break it (inverted condition, deleted branch) and the test that fails on that mutation; when no test would, add one. Record each pair under `PINNING`. Executing the mutation is optional — do it when a single cheap test file covers the guard.
+   2. **Coverage** — when the brief carries `COVERAGE_CMD: <command>`: run it once and list the uncovered lines and branches of the files you touched. Close a gap with a test when it is behavior the spec describes (see [Tests](#tests)); report the rest under `COVERAGE` with the reason it stays untested. The project's coverage target is aimed at, never reached with tests written for a line's sake.
    3. **Self-check** — when the brief carries `SELF_CHECK_CMD: <command>`: run it from the working root, fix its findings, re-run, and keep its final output for `SELF_CHECK`.
    4. When the spec has a `Done means` section, check every bullet and report each pass/fail; any fail blocks the completion claim. Two distinct gates: the verification command says the code is healthy (universal), `Done means` says the feature works (per-feature acceptance) — passing one never substitutes for the other.
+
+## Tests
+
+Tests prove what the spec promises, following the project's test conventions:
+
+- One test per `Done means` bullet and per spec rule that changes observable behavior (a `Decisions` line or `Reference` row that does), plus one regression test per bug fixed. Scope, cost and settled lines need no test.
+- Assert outcomes: what the code returns or responds, and the commands it sends to its dependencies (create, update, send, store), with dependencies mocked as the project's conventions require.
+- Never assert logging calls, the queries the code makes along the way (reads, lookups, checks), constant values or internal structure — unless a spec rule or a project convention makes their order or absence the behavior. A branch whose only observable difference is a log line stays uncovered and is reported.
+- One test per behavior: no test that restates another, no second test for the same guard.
 
 ## What You Must NOT Do
 
 - Do NOT add features not explicitly requested in the specification
+- Do NOT write a test only to cover a line
 - Do NOT create abstractions for single-use operations
 - Do NOT add validation for scenarios that cannot occur
 - Do NOT disable lint rules or ignore type errors
@@ -92,7 +102,7 @@ Flat markdown: each key on its own line as `KEY:`, bullets under it, no code fen
 - `SUMMARY` — what was built, one to three bullets.
 - `DEVIATIONS` — every point where the code departs from the spec, with the reason.
 - `CHANGED_FILES` — one path per bullet, reconciled against `git status --porcelain` immediately before returning: no file listed that git does not show as changed, none missing.
-- `PINNING` — one bullet per added guard or branch: `<file:line> · mutation: <inverted | deleted …> · failing test: <test name>`; `none` when the brief had no `COVERAGE_CMD`.
+- `COVERAGE` — one bullet per touched file with uncovered lines or branches left untested: `<file> · <lines/branches> · <why untested>`; `none` when nothing is left or the brief had no `COVERAGE_CMD`.
 - `SELF_CHECK` — the final output of `SELF_CHECK_CMD` (`clean` when it printed nothing); `none` when the brief had no `SELF_CHECK_CMD`.
 - `EVIDENCE` — one bullet per completion claim: `<claim> · <command> · <result line>`. Covers the verification command, the coverage command, the self-check, and each `Done means` bullet. A claim without a tool result behind it is not made.
 - `QUESTIONS` — bullets, or `none`.
@@ -109,12 +119,12 @@ CHANGED_FILES:
 - src/services/export-csv.ts
 - src/services/export-csv.test.ts
 - src/routes/index.ts
-PINNING:
-- src/services/export-csv.ts:42 · mutation: inverted `if (rows.length === 0)` · failing test: "returns an empty file for an empty selection"
+COVERAGE:
+- src/services/export-csv.ts · branch 57 · only logs a skipped row; no observable difference
 SELF_CHECK: clean
 EVIDENCE:
 - verification green · `pnpm check` · "Tests 48 passed (48)"
-- coverage of touched files 100% · `pnpm coverage` · "export-csv.ts | 100 | 100 | 100 | 100"
+- coverage of touched files 97% · `pnpm coverage` · "export-csv.ts | 97 | 92 | 100 | 97"
 - Done means "an export downloads as CSV" met · `pnpm test export-csv` · "3 passed"
 QUESTIONS: none
 BLOCKERS: none

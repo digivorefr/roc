@@ -92,8 +92,8 @@ Highest-priority criterion: every instance must be flagged.
 
 #### Criterion 6: Tests
 
-- Missing tests for changed code → flag
-- Existing tests: happy path AND edge cases; behavior over implementation details; missing assertions; structure consistent with project patterns; redundant tests
+- Missing tests for the behavior the change promises (each `Done means` bullet, each rule of the spec) → flag; an uncovered line outside that behavior is not a finding
+- Existing tests: happy path AND edge cases; behavior over implementation details (assertions on logging calls, intermediate queries or constants → flag); missing assertions; structure consistent with project patterns; redundant tests
 - Propose the specific missing test cases
 
 #### Criterion 7: Dead code

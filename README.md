@@ -27,7 +27,7 @@ Agents are invoked via the `Task` tool (or by asking Claude to "use the spec-wri
 
 #### `rocket:spec-writer`
 
-Writes a functional specification for a topic, anchored on existing patterns of the target codebase. Submits its `Done means` (acceptance criteria) alone for approval before drafting the spec.
+Writes a functional specification for a topic, anchored on existing patterns of the target codebase: what changes, where, the decisions a reader can refuse, the alternatives rejected, `Done means` (acceptance criteria), risks and rollback — no file references. Submits its `Decisions` and `Done means` alone for approval before drafting the spec.
 
 - Trigger: `write a spec with rocket:spec-writer about ...`
 - Refine: `relaunch spec-writer with these details: ...`
@@ -38,7 +38,7 @@ Writes a functional specification for a topic, anchored on existing patterns of 
 Implements a specification, plan, or detailed instructions autonomously, then runs the project's verification commands.
 
 - Trigger: `implement with rocket:spec-maker from specs/<file>.md`
-- Pipeline (orchestrators): prompt starting with `MODE: pipeline`, optional `COVERAGE_CMD:` / `SELF_CHECK_CMD:` slots — returns `SUMMARY`, `DEVIATIONS`, `CHANGED_FILES`, `PINNING`, `SELF_CHECK`, `EVIDENCE`, `QUESTIONS`, `BLOCKERS`.
+- Pipeline (orchestrators): prompt starting with `MODE: pipeline`, optional `COVERAGE_CMD:` / `SELF_CHECK_CMD:` slots — returns `SUMMARY`, `DEVIATIONS`, `CHANGED_FILES`, `COVERAGE`, `SELF_CHECK`, `EVIDENCE`, `QUESTIONS`, `BLOCKERS`. Tests cover what the spec promises; coverage gaps are reported, not filled for their own sake.
 
 The agent expects project-specific conventions (test command, lint rules, error-handling style) to be declared in the project's `CLAUDE.md`. Run [`/rocket:setup`](#rocketsetup) to generate that block.
 
