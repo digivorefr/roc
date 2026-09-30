@@ -9,7 +9,7 @@ Generate 3 commit message variants from the current git diff.
 
 ## Rules
 
-- Each message is a single line, max 80 characters
+- Each message is a single line, max 80 characters: no body, no trailer (no `Co-Authored-By` or any other), including when the message is used to commit
 - Written in English
 - Must grammatically complete the sentence "This commit..." but do NOT include "This commit" in the output
 - The action verb must be in base form (infinitive), NOT conjugated: `Add`, `Fix`, `Refactor`, NOT `Adds`, `Fixes`, `Refactors`

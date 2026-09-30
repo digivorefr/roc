@@ -42,6 +42,10 @@ Implements a specification, plan, or detailed instructions autonomously, then ru
 
 The agent expects project-specific conventions (test command, lint rules, error-handling style) to be declared in the project's `CLAUDE.md`. Run [`/rocket:setup`](#rocketsetup) to generate that block.
 
+#### `rocket:pr-rebaser`
+
+Worker of [`/rocket:rebase-prs`](#rocketrebase-prs), dispatched by it only: rebases one PR in its own worktree, reconciles it with what was merged meanwhile, validates the result and returns a structured report. Never pushes.
+
 ### Skills
 
 Skills can be invoked explicitly with `/rocket:<name>` or auto-triggered when the description matches the request.
@@ -68,6 +72,22 @@ Reviews uncommitted/unpushed changes against nine criteria: `Done means` conform
 - `/rocket:review`
 - `/rocket:review rebase` — same commit picker as commit-writer.
 - Pipeline (orchestrators): prompt starting with `MODE: pipeline` + `BASE:` follows the self-contained [`pipeline.md`](plugins/rocket/skills/review/pipeline.md) contract — fixed scope, four criteria plus caller `DEFECT_CLASSES`, every finding with severity and confidence, no interaction.
+
+#### `/rocket:rebase-prs`
+
+After a PR is merged, rebases the other open PRs of a GitHub repository onto their moved base. You pick the PRs; a `rocket:pr-rebaser` worker per PR rebases it in its own worktree, reconciles it with everything merged since it branched (the merged side wins on what it changed, the goal is the benefit of both), checks the result against the PR's spec (`specs/` file or Notion link) and the project's verification command, and hands every uncertain resolution back to you. Each push waits for your yes. Stacked PRs are handled parents first; an interrupted run can be resumed.
+
+- `/rocket:rebase-prs`
+
+Manual-only — never auto-triggered.
+
+Prerequisites:
+
+- **GitHub access**: the GitHub connector (official server) or the `gh` CLI logged in; each operation uses the connector when it has the tool, `gh` otherwise.
+- Optional: the **Notion connector**, for PRs whose spec is a Notion page.
+- Gitignored files the tests need (`.env`, …) must be listed in the project's `.worktreeinclude`, or the workers' worktrees will not have them.
+- Rebased commits are created unsigned; a repository that requires signed commits refuses them or blocks the merge.
+- Workers run the project's install and verification commands in each worktree; their commands prompt for permission unless your permission mode or rules allow them.
 
 #### `/rocket:condense`
 

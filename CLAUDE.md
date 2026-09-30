@@ -80,6 +80,8 @@ All identifiers, frontmatter, comments, and prose are in English. Skill descript
 
 A plugin may depend on local hardware, a specific OS, or a per-user external account (e.g. a personal MCP server bound to a single identity) if (a) it serves a narrow audience of operators who already meet those prerequisites, (b) it has no equivalent that fits within the consumer's `CLAUDE.md` model, and (c) the plugin's `README.md` explicitly states the hardware/OS/account prerequisite. `my-hand` is the first such plugin: it requires a reMarkable 2 tablet plugged in over USB **and** a per-user Gmail MCP server, and is tested only on macOS-arm64. Hardware non-portability and per-user-identity dependencies both qualify under this exception.
 
+The exception also applies to a single skill of an otherwise portable plugin. `/rocket:rebase-prs` is rocket's first GitHub-dependent skill: it needs the GitHub connector or a logged-in `gh` (per-user account), stated in the README; the rest of rocket stays stack-agnostic.
+
 ## Authoring a new skill
 
 A skill lives in `plugins/<plugin>/skills/<name>/SKILL.md`. Frontmatter follows the [official spec](https://code.claude.com/docs/en/skills#frontmatter-reference).
