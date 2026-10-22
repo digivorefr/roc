@@ -31,14 +31,14 @@ Writes a functional specification for a topic, anchored on existing patterns of 
 
 - Trigger: `write a spec with rocket:spec-writer about ...`
 - Refine: `relaunch spec-writer with these details: ...`
-- Pipeline (orchestrators): prompt starting with `MODE: pipeline` + `ARTIFACT_PATH:` — first dispatch returns `POINTS` / `DELIVERABLE`, a resume with `FRAMING: done` writes the spec to the path; questions come back as `QUESTIONS` / `BLOCKERS`, never as a live question.
+- Pipeline (orchestrators): prompt starting with `MODE: pipeline` + `ARTIFACT_PATH:` (optional `EVIDENCE_PATH:` for the sources of platform facts) — first dispatch returns `POINTS` / `DELIVERABLE` / `COST`, a resume with `FRAMING: done` writes the spec to the path; questions come back as `QUESTIONS` (product, cost or taste points prefixed `Tier P:` with a recommended default) / `BLOCKERS`, never as a live question.
 
 #### `rocket:spec-maker`
 
 Implements a specification, plan, or detailed instructions autonomously, then runs the project's verification commands.
 
 - Trigger: `implement with rocket:spec-maker from specs/<file>.md`
-- Pipeline (orchestrators): prompt starting with `MODE: pipeline`, optional `COVERAGE_CMD:` / `SELF_CHECK_CMD:` slots — returns `SUMMARY`, `DEVIATIONS`, `CHANGED_FILES`, `COVERAGE`, `SELF_CHECK`, `EVIDENCE`, `QUESTIONS`, `BLOCKERS`. Tests cover what the spec promises; coverage gaps are reported, not filled for their own sake.
+- Pipeline (orchestrators): prompt starting with `MODE: pipeline`, optional `COVERAGE_CMD:` / `SELF_CHECK_CMD:` / `CONVENTIONS:` / `SCOPE_LOCK:` slots — returns `SUMMARY`, `DEVIATIONS`, `CHANGED_FILES`, `COVERAGE`, `SELF_CHECK`, `EVIDENCE` (each new test with the mutation that made it fail), `QUESTIONS`, `BLOCKERS`. Tests cover what the spec promises; coverage gaps are reported, not filled for their own sake; infrastructure files change only when the spec says so.
 
 The agent expects project-specific conventions (test command, lint rules, error-handling style) to be declared in the project's `CLAUDE.md`. Run [`/rocket:setup`](#rocketsetup) to generate that block.
 
@@ -71,7 +71,7 @@ Reviews uncommitted/unpushed changes against nine criteria: `Done means` conform
 
 - `/rocket:review`
 - `/rocket:review rebase` — same commit picker as commit-writer.
-- Pipeline (orchestrators): prompt starting with `MODE: pipeline` + `BASE:` follows the self-contained [`pipeline.md`](plugins/rocket/skills/review/pipeline.md) contract — fixed scope, four criteria plus caller `DEFECT_CLASSES`, every finding with severity and confidence, no interaction.
+- Pipeline (orchestrators): prompt starting with `MODE: pipeline` + `BASE:` follows the self-contained [`pipeline.md`](plugins/rocket/skills/review/pipeline.md) contract — fixed scope, four criteria plus caller `DEFECT_CLASSES` and `CONVENTIONS`, later rounds graded by `PRIOR_FINDINGS` / `DELTA`, every finding with severity and confidence, no interaction; read-only but free to run the tests, mutate a guard or open a local browser.
 
 #### `/rocket:rebase-prs`
 

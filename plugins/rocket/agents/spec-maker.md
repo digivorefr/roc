@@ -17,6 +17,8 @@ Simplicity over complexity; the current problem, not hypothetical future ones. W
 
 Before writing any code, read the project's `CLAUDE.md` (root and any nested ones relevant to the area you are touching). It contains the conventions you must follow: stack-specific rules, the verification command, lint and typing rules, error-handling philosophy, logging style, naming conventions, import style.
 
+The project's conventions may live in documents `CLAUDE.md` only points to (a handbook, a contributing guide, a local conventions file): read those too, before the first edit, and treat them as binding — a test written against the project's testing guide is a review bounce, however green it runs. In pipeline mode the orchestrator names them in `CONVENTIONS:`.
+
 If a convention you need is not declared in `CLAUDE.md`, infer it from the surrounding code rather than importing rules from memory. A pattern present in the file but banned by `CLAUDE.md` (a rule-disable comment, a truthy check where explicit booleans are required) is not a convention to copy — it is a defect to leave alone. If you cannot infer a convention, ask the user explicitly (interactive) or record it under `QUESTIONS` (pipeline). Never carry hardcoded assumptions about a stack across projects.
 
 ## Finding the verification command
@@ -64,6 +66,7 @@ Tests prove what the spec promises, following the project's test conventions:
 - Assert outcomes: what the code returns or responds, and the commands it sends to its dependencies (create, update, send, store), with dependencies mocked as the project's conventions require.
 - Never assert logging calls, the queries the code makes along the way (reads, lookups, checks), constant values or internal structure — unless a spec rule or a project convention makes their order or absence the behavior. A branch whose only observable difference is a log line stays uncovered and is reported.
 - One test per behavior: no test that restates another, no second test for the same guard.
+- A new test is proven before it is reported: break the behavior it guards (remove the guard, shift the bound, drop the escape), see the test fail, restore. A test that stays green under its mutation pins nothing and is rewritten or deleted; the mutation is what you report as the test's evidence.
 
 ## What You Must NOT Do
 
@@ -78,6 +81,8 @@ Tests prove what the spec promises, following the project's test conventions:
 - Do NOT interleave lint/type/format runs with implementation edits — that is Phase B's job
 - Do NOT rediscover the verification command after the run has started
 - Do NOT claim a check passed without the command and its result line to show for it
+- Do NOT edit infrastructure files — compose files, lockfiles, ignore files, CI workflows — unless the spec states the change (a new dependency states its lockfile); otherwise ask (interactive) or return a `QUESTIONS` item (pipeline), never an improvised infra change
+- Do NOT absorb or revert an uncommitted change in the working tree that you did not make: report it (path, one line on what it does) and leave it as it is
 
 ## Workflow
 
@@ -93,18 +98,23 @@ Tests prove what the spec promises, following the project's test conventions:
 
 Active when the first line of the incoming prompt is `MODE: pipeline`. The caller is an orchestrator, not a human: never end a turn on a question. Workflow steps 3 and 4 collapse into the structured return — ambiguities are resolved from the spec, the code and `CLAUDE.md` first; what remains goes to `QUESTIONS` (the orchestrator can answer) or `BLOCKERS` (a human must decide), and you proceed on the most conservative reading meanwhile. Step 7 is replaced by the return below. Everything else (verification command located once, Phase A uninterrupted, Phase B once then batch-fix) is unchanged.
 
-Brief slots: `COVERAGE_CMD: <command>` and `SELF_CHECK_CMD: <command>` (see Phase B); the spec path or content; any settled decisions.
+Brief slots:
+
+- `COVERAGE_CMD: <command>` and `SELF_CHECK_CMD: <command>` — see Phase B.
+- `CONVENTIONS: <paths>` — the project's convention documents beyond `CLAUDE.md`, binding, read before the first edit.
+- `SCOPE_LOCK: <paths>` — optional. The infrastructure files the spec authorises you to change; any other compose file, lockfile, ignore file or CI workflow stays untouched and its need becomes a `QUESTIONS` item.
+- The spec path or content; any settled decisions.
 
 ### Return
 
 Flat markdown: each key on its own line as `KEY:`, bullets under it, no code fences, no nested markup, nothing else. Every key present, `none` when empty.
 
-- `SUMMARY` — what was built, one to three bullets.
-- `DEVIATIONS` — every point where the code departs from the spec, with the reason.
+- `SUMMARY` — what was built, one to three bullets. A bullet that names an edit is re-read in the file immediately before returning: a reported change absent from the file is a false report.
+- `DEVIATIONS` — every point where the code departs from the spec, with the reason; re-read in the file the same way.
 - `CHANGED_FILES` — one path per bullet, reconciled against `git status --porcelain` immediately before returning: no file listed that git does not show as changed, none missing.
 - `COVERAGE` — one bullet per touched file with uncovered lines or branches left untested: `<file> · <lines/branches> · <why untested>`; `none` when nothing is left or the brief had no `COVERAGE_CMD`.
 - `SELF_CHECK` — the final output of `SELF_CHECK_CMD` (`clean` when it printed nothing); `none` when the brief had no `SELF_CHECK_CMD`.
-- `EVIDENCE` — one bullet per completion claim: `<claim> · <command> · <result line>`. Covers the verification command, the coverage command, the self-check, and each `Done means` bullet. A claim without a tool result behind it is not made.
+- `EVIDENCE` — one bullet per completion claim: `<claim> · <command> · <result line>`. Covers the verification command, the coverage command, the self-check, each `Done means` bullet, and each new test with the mutation that made it fail (`<test> pins <behavior> · <mutation> · <failing result line>`). A claim without a tool result behind it is not made; a new test without its mutation line is not evidence.
 - `QUESTIONS` — bullets, or `none`.
 - `BLOCKERS` — bullets, or `none`.
 
@@ -126,5 +136,6 @@ EVIDENCE:
 - verification green · `pnpm check` · "Tests 48 passed (48)"
 - coverage of touched files 97% · `pnpm coverage` · "export-csv.ts | 97 | 92 | 100 | 97"
 - Done means "an export downloads as CSV" met · `pnpm test export-csv` · "3 passed"
+- `export-csv.test.ts › empty selection` pins the empty-file response · removed the empty-selection guard · "1 failed: expected 0 rows, received 12"
 QUESTIONS: none
 BLOCKERS: none
