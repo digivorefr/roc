@@ -46,6 +46,17 @@ The agent expects project-specific conventions (test command, lint rules, error-
 
 Worker of [`/rocket:rebase-prs`](#rocketrebase-prs), dispatched by it only: rebases one PR in its own worktree, reconciles it with what was merged meanwhile, validates the result and returns a structured report. Never pushes.
 
+#### Studio workers
+
+Six workers of [`/rocket:studio`](#rocketstudio), dispatched by it only, each fed a distinct source so their blind spots do not overlap:
+
+- `rocket:studio-lexicon` — the product's words (objects, relations, actions, events) from its domain docs, code and your words; renames flagged, never applied.
+- `rocket:studio-archivist` — the language an existing product already speaks: observed intent, signature, motion, words in use, inconsistencies, design system gaps.
+- `rocket:studio-intent` — one intent and its key image from one source: the subject's world, your references, or a deliberate counterpoint. Three instances run in parallel.
+- `rocket:studio-prototyper` — a throwaway prototype of one screen or flow, every state and transition, three ways considered before one is kept; corrects once, adds variant switches.
+- `rocket:studio-critic` — operates the screen and critiques it against the frame, the catalog, the language, your taste rules and your past remarks on the same screen type; every finding names its rule or reads `opinion`. Also compares a built screen with its prototype.
+- `rocket:studio-end-user` — the end-user agent: sees only the prototype and the tasks, reports where it hesitated, got stuck or was misled by a word, across variants.
+
 ### Skills
 
 Skills can be invoked explicitly with `/rocket:<name>` or auto-triggered when the description matches the request.
@@ -88,6 +99,26 @@ Prerequisites:
 - Gitignored files the tests need (`.env`, …) must be listed in the project's `.worktreeinclude`, or the workers' worktrees will not have them.
 - Rebased commits are created unsigned; a repository that requires signed commits refuses them or blocks the merge.
 - Workers run the project's install and verification commands in each worktree; their commands prompt for permission unless your permission mode or rules allow them.
+
+#### `/rocket:studio`
+
+Designs web interfaces with a frame of interface craft (`references/frame.md`), a catalog of ways to solve interface problems (`references/catalog.md`), distinct sources of inspiration, and your eye at three or four checkpoints. Five entries, picked from what it finds and stated in one line you can refuse: found a product's language from scratch, found it from the existing product, decline one new screen or flow within the language, critique a screen, compare a built screen with its proposal. Every decision you give in free text comes back as one refusable line, and nothing runs before your go. Your checkpoint remarks build a critique corpus that later critiques cite. A decline ends with a proposal for `rocket:spec-writer`; prototype code never ships.
+
+- `/rocket:studio`, "design the settings screen", "critique this screen", "conçois l'écran …"
+- Pipeline (orchestrators): prompt starting with `MODE: pipeline` + `CHECK: critique | fidelity` + `SCREEN:` (plus `PROPOSAL:` for fidelity, optional `SCREEN_TYPE:` and `TASKS:`) follows the self-contained [`pipeline.md`](plugins/rocket/skills/studio/references/pipeline.md) contract — returns `FINDINGS`, `GAPS`, `NOT_COMPARED`, `WALK`, `CONFIDENCE`, `QUESTIONS`, `BLOCKERS`, asks nothing, writes nothing; a creative entry returns a blocker.
+
+Files:
+
+- `design/` at the repository root — the product language and the proposals with their captures; committed.
+- `~/.roc/rocket/studio/` — your critique corpus, taste rules and the closed list of screen types and aspects, shared across projects.
+- `<project>/.roc/rocket/studio/` — run state, self-contained prototypes and unchosen key images; the main checkout's copy also holds the preview recipe, which worktrees replay. Keep `.roc/` gitignored.
+
+Notes:
+
+- No setup step: on first contact studio discovers how to show a screen or a story from the project itself, states it in one line, and records it on your go. It starts a story or dev server on its own; an environment the project's scripts bring up is yours to start.
+- Browser tooling in the session is optional: without it, you open prototypes and key images from the paths given, captures are missing, and critiques state reduced confidence.
+- Writes happen after your go, in a later turn, so each one prompts unless your permission rules allow it: add `Edit(design/**)`, `Edit(.roc/rocket/studio/**)` and `Edit(~/.roc/rocket/studio/**)` to your allow rules. From a worktree, the preview recipe is written to the main checkout's `.roc/`, outside these patterns.
+- Each creative run costs several rounds of agents.
 
 #### `/rocket:condense`
 
