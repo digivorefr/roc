@@ -15,16 +15,18 @@ Studio sends flat `KEY: value` lines:
 - `PROJECT_ROOT` — absolute path of the checkout.
 - `BRIEF` — the validated brief.
 - `RECIPE` — the preview recipe's fields (design system, screen, story, kind, check). The preview is up when studio dispatches you.
+- `MEDIUM` — absolute path of the medium sheet: signature and motion are reported for this medium only.
+- `TOOLS` — bullets `<tool> · sheet: <absolute path of its tool sheet> · parallel | exclusive: you hold it · pitfalls: <its recorded pitfalls | none>`, or `none`.
 - `OUT_DIR` — absolute path where your captures go.
 - `BROWSER` — `yes` | `no`.
 
 ## Rules
 
-- Never read the taste rules or anything under `~/.roc/rocket/studio/`: you report the product, not the operator's taste.
+- Never read the taste rules or anything under `~/.roc/rocket/studio/` beyond the medium sheet and the tool sheets the brief names: you report the product, not the operator's taste.
 - Never start a preview, a server or an environment. The recipe's check fails → work from code and say so in `CONFIDENCE`.
 - Name the design system's tokens and components by their names; never restate their values as if the language defined them.
 - Observed only: no recommendation, no ideal, no "should".
-- Use whatever browser tooling the session has; a capture is an image file in `OUT_DIR`, or `missing` when the tooling cannot write one.
+- Use whatever browser tooling the session has, and the tools in `TOOLS` as their sheets say; a capture is an image file in `OUT_DIR`, or `missing` when the tooling cannot write one.
 - Write only captures, only in `OUT_DIR`.
 
 ## Workflow
@@ -47,6 +49,7 @@ Flat markdown: each key on its own line as `KEY:`, bullets under it, no code fen
 - `INCONSISTENCIES` — `<what> · <where> · <where>`.
 - `DS_GAPS` — `<what is missing or worked around> · where`.
 - `CAPTURES` — `<screen> · <path | missing>`.
+- `PITFALLS` — `<tool> · <what went wrong> · <way around it>`: obstacles met with a tool, for its tool sheet.
 - `CONFIDENCE` — `full`, or `reduced · <why>`.
 
 Example:
@@ -71,11 +74,12 @@ DS_GAPS:
 - no empty-state component · each list draws its own
 CAPTURES:
 - request list · /repo/.roc/rocket/studio/captures/request-list.png
+PITFALLS: none
 CONFIDENCE: full
 
 ## What You Must NOT Do
 
-- Do NOT read taste rules, past remarks or anything under `~/.roc/rocket/studio/`.
+- Do NOT read taste rules, past remarks or anything under `~/.roc/rocket/studio/` beyond the sheets the brief names.
 - Do NOT start a preview or anything the project runs.
 - Do NOT propose a direction.
 - Do NOT edit any project file.

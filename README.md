@@ -48,14 +48,15 @@ Worker of [`/rocket:rebase-prs`](#rocketrebase-prs), dispatched by it only: reba
 
 #### Studio workers
 
-Six workers of [`/rocket:studio`](#rocketstudio), dispatched by it only, each fed a distinct source so their blind spots do not overlap:
+Seven workers of [`/rocket:studio`](#rocketstudio), dispatched by it only, each fed a distinct source so their blind spots do not overlap:
 
+- `rocket:studio-scout` — equips studio for a craft it has not practised: drafts a medium's sheet from recognised references, each rule cited; researches the tool a need calls for, installs it under your bench after your go, checks it and drafts its tool sheet.
 - `rocket:studio-lexicon` — the product's words (objects, relations, actions, events) from its domain docs, code and your words; renames flagged, never applied.
 - `rocket:studio-archivist` — the language an existing product already speaks: observed intent, signature, motion, words in use, inconsistencies, design system gaps.
 - `rocket:studio-intent` — one intent and its key image from one source: the subject's world, your references, or a deliberate counterpoint. Three instances run in parallel.
-- `rocket:studio-prototyper` — a throwaway prototype of one screen or flow, every state and transition, three ways considered before one is kept; corrects once, adds variant switches.
-- `rocket:studio-critic` — operates the screen and critiques it against the frame, the catalog, the language, your taste rules and your past remarks on the same screen type; every finding names its rule or reads `opinion`. Also compares a built screen with its prototype.
-- `rocket:studio-end-user` — the end-user agent: sees only the prototype and the tasks, reports where it hesitated, got stuck or was misled by a word, across variants.
+- `rocket:studio-maker` — the piece in its medium's material: a throwaway prototype of one screen or flow, or another medium's real deliverable, every state and transition, three ways considered before one is kept; corrects once, adds variant switches; also makes the probe, the raw materials and the study page.
+- `rocket:studio-critic` — operates the piece and critiques it against its medium sheet (for the web, the frame and the catalog), the language, your taste rules and your past remarks on the same piece type; every finding names its rule or reads `opinion`, and what it could not perceive is said. Also compares a built screen with its prototype.
+- `rocket:studio-audience` — the audience agent: sees only the piece and the tasks, meets the piece the way its public does (operates a screen, reads a page, listens when a tool lets it), reports where it hesitated, got stuck or was misled by a word, across variants, and what it could not perceive.
 
 ### Skills
 
@@ -102,22 +103,28 @@ Prerequisites:
 
 #### `/rocket:studio`
 
-Designs web interfaces with a frame of interface craft (`references/frame.md`), a catalog of ways to solve interface problems (`references/catalog.md`), distinct sources of inspiration, and your eye at three or four checkpoints. Five entries, picked from what it finds and stated in one line you can refuse: found a product's language from scratch, found it from the existing product, decline one new screen or flow within the language, critique a screen, compare a built screen with its proposal. Every decision you give in free text comes back as one refusable line, and nothing runs before your go. Your checkpoint remarks build a critique corpus that later critiques cite. A decline ends with a proposal for `rocket:spec-writer`; prototype code never ships.
+Designs a piece in any medium — a web interface, a typeface, a logo, a printed page, a deck, an image, a sound — with the rules of its craft, distinct sources of inspiration, and your eye at three or four checkpoints. The medium is a parameter, carried by one medium sheet: the web sheet ships with the skill (a frame of interface craft, `references/frame.md`, and a catalog of ways to solve interface problems, `references/catalog.md`); any other is drafted from cited references the first time studio meets the medium, shown to you once, and yours to amend — until you do, none of its rules is firm. Entries are picked from what it finds and stated in one line you can refuse, next to the medium: found a product's language from scratch, found it from the existing product, decline one piece within the language, make a piece for a product that has no language, critique a piece, compare a built screen with its proposal. Every decision you give in free text comes back as one refusable line, the opening one naming the deliverable and its tool, and nothing runs before your go. Your checkpoint remarks build a critique corpus that later critiques cite. A web decline ends with a proposal for `rocket:spec-writer`, and prototype code never ships; elsewhere the run ends on the deliverable files and their proposal.
 
-- `/rocket:studio`, "design the settings screen", "critique this screen", "conçois l'écran …"
-- Pipeline (orchestrators): prompt starting with `MODE: pipeline` + `CHECK: critique | fidelity` + `SCREEN:` (plus `PROPOSAL:` for fidelity, optional `SCREEN_TYPE:` and `TASKS:`) follows the self-contained [`pipeline.md`](plugins/rocket/skills/studio/references/pipeline.md) contract — returns `FINDINGS`, `GAPS`, `NOT_COMPARED`, `WALK`, `CONFIDENCE`, `QUESTIONS`, `BLOCKERS`, asks nothing, writes nothing; a creative entry returns a blocker.
+Studio equips itself: each tool a medium needs (compile a font, render a sound, export a page, capture motion) is researched once, stated in one line you can refuse, installed only under your bench, proven on a real file before anything is designed, recorded as a tool sheet with the pitfalls met, then replayed without asking. What no tool lets an agent perceive is said at the checkpoint as `judged by you alone`.
+
+- `/rocket:studio`, "design the settings screen", "draw a logo", "critique this screen", "conçois l'écran …", "dessine une typo"
+- Pipeline (orchestrators): prompt starting with `MODE: pipeline` + `CHECK: critique | fidelity` + `SCREEN:` (plus `PROPOSAL:` for fidelity, optional `SCREEN_TYPE:` and `TASKS:`) follows the self-contained [`pipeline.md`](plugins/rocket/skills/studio/references/pipeline.md) contract — returns `FINDINGS`, `GAPS`, `NOT_COMPARED`, `WALK`, `CONFIDENCE`, `QUESTIONS`, `BLOCKERS`, asks nothing, writes nothing (no medium sheet, no tool sheet, no corpus); a creative entry returns a blocker. Web medium only.
 
 Files:
 
-- `design/` at the repository root — the product language and the proposals with their captures; committed.
-- `~/.roc/rocket/studio/` — your critique corpus, taste rules and the closed list of screen types and aspects, shared across projects.
-- `<project>/.roc/rocket/studio/` — run state, self-contained prototypes and unchosen key images; the main checkout's copy also holds the preview recipe, which worktrees replay. Keep `.roc/` gitignored.
+- `design/` at the repository root — the product language, the proposals with their captures and deliverable files, and the product's validated raw materials (`design/materials/`); committed.
+- `~/.roc/rocket/studio/` — your critique corpus, taste rules and the closed list of piece types and aspects, each tied to a medium (screen types recorded earlier are the web medium's), shared across projects.
+- `~/.roc/rocket/studio/media/` — the medium sheets studio drafted and you amended, one per medium.
+- `~/.roc/rocket/studio/bench/` — one tool sheet per tool, and every tool studio installed, each in its own folder. Nothing is installed globally or in a project; deleting a tool's folder and its sheet uninstalls it.
+- `<project>/.roc/rocket/studio/` — run state, self-contained prototypes, unchosen key images and the run's raw materials; the main checkout's copy also holds the preview recipe, which worktrees replay. Keep `.roc/` gitignored.
 
 Notes:
 
 - No setup step: on first contact studio discovers how to show a screen or a story from the project itself, states it in one line, and records it on your go. It starts a story or dev server on its own; an environment the project's scripts bring up is yours to start.
+- No tool is required: a run completes with HTML, SVG and scripts. A connector to a design application, when the session has one, is optional: studio discovers it from the session's tools and records it on the bench like any other tool, never as the mandatory path. An application you must start is never started by studio: it asks and waits.
+- A raw material the piece uses (a logo, a texture, a font, a sound) is made once per run; one that carries identity gets its own checkpoint. Ask to share a round's intents or variants and you get one page holding all of them.
 - Browser tooling in the session is optional: without it, you open prototypes and key images from the paths given, captures are missing, and critiques state reduced confidence.
-- Writes happen after your go, in a later turn, so each one prompts unless your permission rules allow it: add `Edit(design/**)`, `Edit(.roc/rocket/studio/**)` and `Edit(~/.roc/rocket/studio/**)` to your allow rules. From a worktree, the preview recipe is written to the main checkout's `.roc/`, outside these patterns.
+- Writes happen after your go, in a later turn, so each one prompts unless your permission rules allow it: add `Edit(design/**)`, `Edit(.roc/rocket/studio/**)` and `Edit(~/.roc/rocket/studio/**)` to your allow rules; the last one covers the medium sheets and the bench. Installing a tool and running its check are commands, prompted the same way. From a worktree, the preview recipe is written to the main checkout's `.roc/`, outside these patterns.
 - Each creative run costs several rounds of agents.
 
 #### `/rocket:condense`

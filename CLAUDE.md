@@ -74,7 +74,7 @@ A skill or agent that only works in one stack does not belong in this marketplac
 
 ### 3. English everywhere
 
-All identifiers, frontmatter, comments, and prose are in English. Skill descriptions may list French triggers as alternative keywords (the user base is bilingual), but skill output is always English. Two exceptions: `condense` writes in the language of its source — a condensed French document stays French; `studio` writes its prototypes' interface copy and a product language's lexicon words in the product's own language, and quotes the operator's remarks verbatim.
+All identifiers, frontmatter, comments, and prose are in English. Skill descriptions may list French triggers as alternative keywords (the user base is bilingual), but skill output is always English. Two exceptions: `condense` writes in the language of its source — a condensed French document stays French; `studio` writes its pieces' copy and a product language's lexicon words in the product's own language, and quotes the operator's remarks verbatim.
 
 ### 4. Exceptions to stack-agnosticism
 
@@ -113,7 +113,8 @@ disable-model-invocation: true   # Only if the skill is manual-only (e.g. /rocke
 - No time-sensitive content. No "as of 2026". No magic numbers without justification.
 - Numeric budgets erode — the model fills them as targets. Constrain with structure instead: a fixed block shape, per-section caps, and one real accepted example (lesson: pr-writer took three tightening rounds before the 1+1+1 contract).
 - The `rebase` scope-selection procedure is intentionally duplicated verbatim in `commit-writer`, `pr-writer`, and `review` (plugins have no include mechanism). When editing it, apply the same change to all three.
-- `studio`'s precedence order is duplicated in its `SKILL.md`, `studio-prototyper` and `studio-critic` (workers never read the skill), and the past-remark rank in `SKILL.md` and `studio-critic`. When editing either, apply the same change everywhere it appears.
+- `studio`'s precedence order is duplicated in its `SKILL.md`, `studio-maker` and `studio-critic` (workers never read the skill), the past-remark rank in `SKILL.md` and `studio-critic`, and the rule that a `draft` medium sheet holds no firm rule in `SKILL.md`, `studio-maker`, `studio-critic` and `studio-intent`. When editing any of them, apply the same change everywhere it appears.
+- No `studio` skill or agent file names a design application or its vendor: such a tool is discovered from the session's tools and recorded as a tool sheet on the operator's bench (`~/.roc/rocket/studio/bench/`). Only the README may say that a connector to one is optional.
 
 ### Description examples (from this repo)
 
