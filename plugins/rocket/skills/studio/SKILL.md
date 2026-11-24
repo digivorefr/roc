@@ -51,9 +51,9 @@ A remark that contradicts a firm frame rule is restated as `contradicts firm fra
 
 | What | Where | Committed |
 |---|---|---|
-| Product language, one per repository | `design/language.md` at the repository root | Yes |
-| Proposals, their captures, a piece's deliverable files | `design/proposals/<slug>.md`, `design/captures/<slug>/`, `design/proposals/<slug>/` | Yes |
-| Validated raw materials of the product | `design/materials/` | Yes |
+| Product language, one per repository | The main checkout's `.roc/rocket/studio/design/language.md` | No |
+| Proposals, their captures, a piece's deliverable files | The main checkout's `.roc/rocket/studio/design/proposals/<slug>.md`, `.roc/rocket/studio/design/captures/<slug>/`, `.roc/rocket/studio/design/proposals/<slug>/` | No |
+| Validated raw materials of the product | The main checkout's `.roc/rocket/studio/design/materials/` | No |
 | Critique corpus and taste rules | `~/.roc/rocket/studio/`: `remarks/<piece type>.md`, `taste.md`, `types.md`, `captures/` | Outside every repository |
 | Web medium sheet | [references/web.md](references/web.md), pointing to the frame and to [references/catalog.md](references/catalog.md) | Shipped |
 | Other medium sheets | `~/.roc/rocket/studio/media/<medium>.md` | Outside every repository |
@@ -62,7 +62,7 @@ A remark that contradicts a firm frame rule is restated as `contradicts firm fra
 | Preview recipe | The main checkout's `.roc/rocket/studio/preview.md` | No |
 | Design-system prototypes | Where the preview tooling needs them, as the recipe states | No; removed after the fidelity comparison |
 
-The main checkout is the first `worktree` line of `git worktree list --porcelain`: from a worktree it is the checkout the worktree belongs to, so a worktree replays the recipe instead of rediscovering it. Every file shape — language, proposal, remark, taste rule, closed list, medium sheet, tool sheet, recipe, run state — and the fixed wording of the new restatement lines are in [references/formats.md](references/formats.md); follow it exactly.
+The main checkout is the first `worktree` line of `git worktree list --porcelain`: from a worktree it is the checkout the worktree belongs to, so a worktree replays the recipe instead of rediscovering it. `.roc/rocket/studio/design/` and `preview.md` always resolve in the main checkout, from a worktree too, so every worktree reads and writes the one language and its proposals; the rest of `.roc/rocket/studio/` is the current checkout's. Every file shape — language, proposal, remark, taste rule, closed list, medium sheet, tool sheet, recipe, run state — and the fixed wording of the new restatement lines are in [references/formats.md](references/formats.md); follow it exactly.
 
 Paths sent in briefs: `MEDIUM: ${CLAUDE_SKILL_DIR}/references/web.md` in the web medium, the sheet under `~/.roc/rocket/studio/media/` otherwise; `FORMATS: ${CLAUDE_SKILL_DIR}/references/formats.md`; every path absolute.
 
@@ -104,7 +104,7 @@ In order, at every interactive invocation.
 2. **Browser** — look at your tools for browser tooling that opens a page, operates it and captures it. None → print once: `No browser tooling in this session: open prototypes and key images yourself from the paths I give; captures will be missing from proposals and the corpus, and every critique works from code with reduced confidence.` Send `BROWSER: yes | no` in every brief.
 3. **Resume** — `run.json` exists → ask: `Resume <entry> "<subject>" from the <checkpoint> checkpoint` / `Discard it`. Resume re-shows that checkpoint from the saved returns and continues after it. Discard lists the run's files (`files` and `materials` in `run.json`), deletes them and `run.json`, then continues; it never touches the bench or a medium sheet.
 4. **Leftovers** — list every studio prototype still on disk: the files named in each proposal's Evidence and in the run directory's `prototypes/`. Mark those inside the source tree: one could be committed by mistake. Delete nothing here.
-5. **Ignore check** — when `git check-ignore -q .roc/x` fails, warn once: `.gitignore does not exclude .roc/; studio's disposable files may show as untracked.` Edit nothing.
+5. **Ignore check** — when `git check-ignore -q .roc/x` fails, warn once: `.gitignore does not exclude .roc/; the language, the proposals and studio's run files may show as untracked.` Edit nothing.
 6. **Entry and medium** — [Entries](#entries), [Medium](#medium).
 7. **Preview** — [Preview](#preview), before any dispatch; web medium only.
 8. **Bench** — [Bench](#bench), before the first dispatch that needs a tool.
@@ -117,14 +117,14 @@ Pick the entry from what you find; the operator never has to name it. State it i
 
 | Request | What you find | Entry line |
 |---|---|---|
-| A new screen or flow | `design/language.md` | `Entry: decline "<screen>" within design/language.md.` |
+| A new screen or flow | `.roc/rocket/studio/design/language.md` | `Entry: decline "<screen>" within .roc/rocket/studio/design/language.md.` |
 | A new screen, or a language | Interface code, no language | `Entry: found the language from the existing product; no language exists yet.` |
 | A web interface, or a language | No interface code, no language | `Entry: found a language from scratch.` |
-| Evolve the language | `design/language.md` | `Entry: found from the existing product, evolving design/language.md.` |
-| A piece in another medium | `design/language.md` | `Entry: decline "<piece>" within design/language.md.` |
+| Evolve the language | `.roc/rocket/studio/design/language.md` | `Entry: found from the existing product, evolving .roc/rocket/studio/design/language.md.` |
+| A piece in another medium | `.roc/rocket/studio/design/language.md` | `Entry: decline "<piece>" within .roc/rocket/studio/design/language.md.` |
 | A piece in another medium | No language | `Entry: make "<piece>" for a product with no language; the run ends on a proposal and founds none.` |
 | Critique a piece | — | `Entry: critique "<piece>" as a <piece type>.` |
-| Compare a built screen with its proposal | `design/proposals/<slug>.md` | `Entry: fidelity of "<screen>" against design/proposals/<slug>.md.` |
+| Compare a built screen with its proposal | `.roc/rocket/studio/design/proposals/<slug>.md` | `Entry: fidelity of "<screen>" against .roc/rocket/studio/design/proposals/<slug>.md.` |
 
 Interface code renders screens: components, templates, pages, stylesheets, a story tool's configuration, or a design-system dependency in the project's manifest.
 
@@ -258,9 +258,9 @@ The restatement that opens a run always holds the `deliverable:` line, naming th
 
 | Entry | `deliverable:` |
 |---|---|
-| Found | `design/language.md and a throwaway prototype of "<screen>" made with <self-contained HTML \| the design system through its preview>` |
-| Web decline | `design/proposals/<slug>.md with its captures and a throwaway prototype made with <the same>` |
-| Decline or make elsewhere | `<the sheet's deliverable file types> in design/proposals/<slug>/ with design/proposals/<slug>.md made with <tool>` |
+| Found | `.roc/rocket/studio/design/language.md and a throwaway prototype of "<screen>" made with <self-contained HTML \| the design system through its preview>` |
+| Web decline | `.roc/rocket/studio/design/proposals/<slug>.md with its captures and a throwaway prototype made with <the same>` |
+| Decline or make elsewhere | `<the sheet's deliverable file types> in .roc/rocket/studio/design/proposals/<slug>/ with .roc/rocket/studio/design/proposals/<slug>.md made with <tool>` |
 | Critique | `findings here and your remarks in the corpus, no file in the project, made with <browser tooling \| a reading of the code \| the sheet's instruments>` |
 | Fidelity | `a state-by-state comparison, then the prototype files removed, made with <browser tooling \| a reading of the code>` |
 
@@ -277,7 +277,7 @@ Every remark made at a checkpoint is captured as: the capture shown (copied to `
 ## Found from scratch
 
 1. Brief: what the product is, for whom, the operator's references if any, and the representative screen to prototype with the tasks it serves (ask when missing). Restate; go.
-2. Dispatch the lexicon worker. [Words](#words) checkpoint; on the go write the lexicon into `design/language.md`.
+2. Dispatch the lexicon worker. [Words](#words) checkpoint; on the go write the lexicon into `.roc/rocket/studio/design/language.md`.
 3. [Intents round](#intents-round), scope `product`. Checkpoint; on the go write the intent sentence and the references.
 4. [Prototype round](#prototype-round), self-contained material. Checkpoint.
 5. On the go complete the language: signature and motion, under the run's medium, take the values the validated prototype uses (the maker's `SIGNATURE_USED` and `MOTION_USED`), not the intent note's, so the language describes what the operator saw; do/avoid from the remarks; departures from default frame rules with their reasons. Developing the representative screen is a later decline run: say so.
@@ -287,7 +287,7 @@ Every remark made at a checkpoint is captured as: the capture shown (copied to `
 1. Brief: what the product is and what the operator expects from the language. Restate; go.
 2. Dispatch the lexicon worker and the archivist together; the archivist's `OUT_DIR` is the run directory's `captures/`.
 3. One checkpoint: the deduced language (observed intent, signature, motion observed, words in use, inconsistencies, design system gaps) with the [Words](#words) table, and one question: write it as it is, or evolve it? Evolving costs a round of intents, a prototype round and two more checkpoints.
-4. On the go write `design/language.md` from the deduced language: its Intent is the archivist's `INTENT_OBSERVED`, its References `none`; its signature and motion name the design system's tokens and components without restating or altering them. The inconsistencies are shown at the checkpoint only and reach do/avoid only through the operator's remarks. Not evolving → the run ends here.
+4. On the go write `.roc/rocket/studio/design/language.md` from the deduced language: its Intent is the archivist's `INTENT_OBSERVED`, its References `none`; its signature and motion name the design system's tokens and components without restating or altering them. The inconsistencies are shown at the checkpoint only and reach do/avoid only through the operator's remarks. Not evolving → the run ends here.
 5. Evolving: ask for the representative screen and its tasks, then steps 3 to 5 of [Found from scratch](#found-from-scratch) with design-system material; the written language is amended, not replaced.
 
 ## Decline
@@ -299,14 +299,14 @@ A `make` entry runs the same steps with `LANGUAGE: none`: nothing is written to 
 3. [Raw materials](#raw-materials), when the brief lists some.
 4. [Intents round](#intents-round), scope `piece`, with the language. Checkpoint.
 5. [Prototype round](#prototype-round); design-system material in the web medium, the sheet's elsewhere. Checkpoint, with variants.
-6. From the first go, each validated line goes into `design/proposals/<slug>.md`. After the prototype checkpoint, complete it: states, transitions, keyboard path, accessibility points, hypotheses, design system gaps, one capture per key state copied to `design/captures/<slug>/`, and every prototype file. Then, in the web medium, print: `Next: give design/proposals/<slug>.md to rocket:spec-writer as settled decisions; its Done means come from Measurable outcomes. Once the screen is built, run /rocket:studio for the fidelity comparison.`
-7. Outside the web medium the validated piece is the deliverable: copy its files to `design/proposals/<slug>/` and list them in the proposal in place of a prototype. A language that holds no signature for this medium gains one from the maker's `SIGNATURE_USED` and `MOTION_USED`, as one refusable line; its lexicon, intent sentence and do/avoid stay shared by every medium.
+6. From the first go, each validated line goes into `.roc/rocket/studio/design/proposals/<slug>.md`. After the prototype checkpoint, complete it: states, transitions, keyboard path, accessibility points, hypotheses, design system gaps, one capture per key state copied to `.roc/rocket/studio/design/captures/<slug>/`, and every prototype file. Then, in the web medium, print: `Next: give .roc/rocket/studio/design/proposals/<slug>.md to rocket:spec-writer as settled decisions; its Done means come from Measurable outcomes. Once the screen is built, run /rocket:studio for the fidelity comparison.`
+7. Outside the web medium the validated piece is the deliverable: copy its files to `.roc/rocket/studio/design/proposals/<slug>/` and list them in the proposal in place of a prototype. A language that holds no signature for this medium gains one from the maker's `SIGNATURE_USED` and `MOTION_USED`, as one refusable line; its lexicon, intent sentence and do/avoid stay shared by every medium.
 
 ## Raw materials
 
 An image, a mark, a texture, a font, a sound that the piece uses. It is not the run's piece: it gets no intents round. An operator who wants intents for a logo runs the logo first, as its own piece; say so.
 
-- Each one is restated with the brief: its name, `identity` or `accessory` as the medium sheet's Raw materials section says, whether it belongs to the product, and the tool. A file the operator already has (a validated logo in `design/materials/`) is taken as it is.
+- Each one is restated with the brief: its name, `identity` or `accessory` as the medium sheet's Raw materials section says, whether it belongs to the product, and the tool. A file the operator already has (a validated logo in `.roc/rocket/studio/design/materials/`) is taken as it is.
 - Made once, before the intents: one `rocket:studio-maker` per raw material, `ROUND: material`, `OUT_DIR` the run directory's `materials/<slug>/`; together, unless two of them need the same exclusive tool. Record each in `run.json`.
 - One that carries identity gets its own checkpoint, before the intents and so before the piece that uses it: shown or given by path; remarks go back to the maker once (`PIECE` its return, `REPORTS` the remarks) and are recorded like any remark. An accessory one is listed at the piece's checkpoint only.
 - Sent as `RAW_MATERIALS` to the intents and the maker, which use them as they are, and laid out by the study page.
@@ -358,7 +358,7 @@ On request ("share the intents", "one page with the variants"), while the run is
 
 After the last go, before deleting `run.json`:
 
-1. **Raw materials** — copy each validated raw material that belongs to the product to `design/materials/` and list it in the proposal; delete the run directory's `materials/<slug>/`, so no other raw material remains in the project. A piece that embeds one holds its own copy.
+1. **Raw materials** — copy each validated raw material that belongs to the product to `.roc/rocket/studio/design/materials/` and list it in the proposal; delete the run directory's `materials/<slug>/`, so no other raw material remains in the project. A piece that embeds one holds its own copy.
 2. **Pitfalls** — add the run's new pitfalls to their tool sheets ([Bench](#bench)) and list them.
-3. **Run files** — delete the run directory's `study/<slug>/` and `drafts/`. Outside the web medium the deliverable is in `design/proposals/<slug>/`: delete `prototypes/<slug>/` and `intents/<slug>/` too. In the web medium the prototype stays until the fidelity comparison.
+3. **Run files** — delete the run directory's `study/<slug>/` and `drafts/`. Outside the web medium the deliverable is in `.roc/rocket/studio/design/proposals/<slug>/`: delete `prototypes/<slug>/` and `intents/<slug>/` too. In the web medium the prototype stays until the fidelity comparison.
 4. Print what was written and where, each deliverable file with its type, and delete `run.json`.

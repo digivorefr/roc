@@ -112,7 +112,7 @@ Studio equips itself: each tool a medium needs (compile a font, render a sound, 
 
 Files:
 
-- `design/` at the repository root — the product language, the proposals with their captures and deliverable files, and the product's validated raw materials (`design/materials/`); committed.
+- `<project>/.roc/rocket/studio/design/` in the main checkout — the product language, the proposals with their captures and deliverable files, and the product's validated raw materials (`materials/`); read and written there from every worktree, never committed.
 - `~/.roc/rocket/studio/` — your critique corpus, taste rules and the closed list of piece types and aspects, each tied to a medium (screen types recorded earlier are the web medium's), shared across projects.
 - `~/.roc/rocket/studio/media/` — the medium sheets studio drafted and you amended, one per medium.
 - `~/.roc/rocket/studio/bench/` — one tool sheet per tool, and every tool studio installed, each in its own folder. Nothing is installed globally or in a project; deleting a tool's folder and its sheet uninstalls it.
@@ -124,7 +124,7 @@ Notes:
 - No tool is required: a run completes with HTML, SVG and scripts. A connector to a design application, when the session has one, is optional: studio discovers it from the session's tools and records it on the bench like any other tool, never as the mandatory path. An application you must start is never started by studio: it asks and waits.
 - A raw material the piece uses (a logo, a texture, a font, a sound) is made once per run; one that carries identity gets its own checkpoint. Ask to share a round's intents or variants and you get one page holding all of them.
 - Browser tooling in the session is optional: without it, you open prototypes and key images from the paths given, captures are missing, and critiques state reduced confidence.
-- Writes happen after your go, in a later turn, so each one prompts unless your permission rules allow it: add `Edit(design/**)`, `Edit(.roc/rocket/studio/**)` and `Edit(~/.roc/rocket/studio/**)` to your allow rules; the last one covers the medium sheets and the bench. Installing a tool and running its check are commands, prompted the same way. From a worktree, the preview recipe is written to the main checkout's `.roc/`, outside these patterns.
+- Writes happen after your go, in a later turn, so each one prompts unless your permission rules allow it: add `Edit(.roc/rocket/studio/**)` and `Edit(~/.roc/rocket/studio/**)` to your allow rules; the last one covers the medium sheets and the bench. Installing a tool and running its check are commands, prompted the same way. From a worktree, the preview recipe, the language and the proposals are written to the main checkout's `.roc/`, outside these patterns.
 - Each creative run costs several rounds of agents.
 
 #### `/rocket:condense`

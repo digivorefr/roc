@@ -2,7 +2,7 @@
 
 Every file studio writes follows its shape here: headings, field names and order are fixed. Content is in English, except lexicon words and a piece's copy (the product's copy language) and the operator's remarks (verbatim). Dates are `YYYY-MM-DD`.
 
-## Product language — `design/language.md`
+## Product language — `.roc/rocket/studio/design/language.md`
 
 ```markdown
 # <Product> language
@@ -51,12 +51,12 @@ Renames: <current word> → <word> · <date> (one line each, or none)
 - A do/avoid line replaced by a newer remark is rewritten in place with the new date; the history stays in the corpus.
 - A refuted hypothesis stays under avoid for good.
 
-## Proposal — `design/proposals/<slug>.md`
+## Proposal — `.roc/rocket/studio/design/proposals/<slug>.md`
 
 ```markdown
 # <Piece> proposal
 
-Language: design/language.md | none · <date>
+Language: .roc/rocket/studio/design/language.md | none · <date>
 Medium: <medium>
 
 ## Settled decisions
@@ -101,17 +101,17 @@ Renames: <current word> → <word> · reaches beyond this screen (or none)
 ## Evidence
 | State | Capture |
 |---|---|
-| <state> | design/captures/<slug>/<state>.png, or missing |
+| <state> | .roc/rocket/studio/design/captures/<slug>/<state>.png, or missing |
 
 Prototype: <how to open it> · files: <every file, repository-relative or absolute> · removed after the fidelity comparison
-Deliverable: design/proposals/<slug>/<file> · <file type> · made with <tool>
-Raw materials: design/materials/<file> · identity | accessory
+Deliverable: .roc/rocket/studio/design/proposals/<slug>/<file> · <file type> · made with <tool>
+Raw materials: .roc/rocket/studio/design/materials/<file> · identity | accessory
 ```
 
 Measurable outcomes hold only what passes or fails without judging looks: a state exists and what it shows, an action triggers a transition, a keyboard path, AA contrast. Every aesthetic choice is a settled decision.
 
 - `Medium:` is omitted in the web medium, as are `Deliverable:` and `Raw materials:` when the run made none; a web proposal without raw materials keeps the shape it had.
-- Outside the web medium the piece is its own deliverable: `Deliverable:` lists one line per file, copied to `design/proposals/<slug>/`, and replaces `Prototype:`. States, Transitions, Keyboard path and Contrast keep only the rows the medium's rules give a meaning to; an empty section reads `none`.
+- Outside the web medium the piece is its own deliverable: `Deliverable:` lists one line per file, copied to `.roc/rocket/studio/design/proposals/<slug>/`, and replaces `Prototype:`. States, Transitions, Keyboard path and Contrast keep only the rows the medium's rules give a meaning to; an empty section reads `none`.
 - `Language: none` marks a piece made for a product without a language.
 
 ## Critique corpus — `~/.roc/rocket/studio/`
@@ -257,7 +257,7 @@ judged by you alone: <what no instrument covered>
 | What | Where | Committed |
 |---|---|---|
 | Raw materials of a run | `<checkout>/.roc/rocket/studio/materials/<slug>/` | No; removed with the run |
-| Validated raw materials of the product | `design/materials/<name>.<ext>` | Yes |
+| Validated raw materials of the product | `<main checkout>/.roc/rocket/studio/design/materials/<name>.<ext>` | No |
 
 ## Run state — `<checkout>/.roc/rocket/studio/run.json`
 
@@ -292,7 +292,7 @@ judged by you alone: <what no instrument covered>
 ```
 
 - `screen_type` keeps its key and holds the piece type, whatever the medium.
-- `materials`: one entry per raw material the piece uses. `carries_identity` gives it its own checkpoint; `product` says it belongs to the product and is copied to `design/materials/` when the run is validated. `files` are relative to the checkout's `.roc/rocket/studio/`; a raw material that existed before the run is listed with its own path, `status: validated`, and is never deleted.
+- `materials`: one entry per raw material the piece uses. `carries_identity` gives it its own checkpoint; `product` says it belongs to the product and is copied to `.roc/rocket/studio/design/materials/` when the run is validated. `files` are relative to the checkout's `.roc/rocket/studio/`; a raw material that existed before the run is listed with its own path, `status: validated`, and is never deleted.
 - `tools`: the bench tools this run uses; `probed` turns true when this run's probe ended on a real deliverable with the tool.
 
 `checkpoint` is the last one validated. A resume re-shows it from `returns/` without running a worker again. The file is deleted when the run ends.

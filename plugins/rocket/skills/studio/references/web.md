@@ -35,8 +35,8 @@ Stays with the operator: whether the intent lands; how a transition feels when n
 
 ## Deliverable
 
-- Founding: `design/language.md`.
-- Declining: `design/proposals/<slug>.md` with its captures in `design/captures/<slug>/`.
+- Founding: `.roc/rocket/studio/design/language.md`.
+- Declining: `.roc/rocket/studio/design/proposals/<slug>.md` with its captures in `.roc/rocket/studio/design/captures/<slug>/`.
 - Critique and fidelity: findings at the checkpoint and remarks in the corpus; no file in the project.
 
 ## Raw materials
